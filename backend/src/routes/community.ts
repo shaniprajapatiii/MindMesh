@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../lib/db';
 import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -67,6 +67,57 @@ router.post('/groups/:id/join', authenticate, async (req: AuthRequest, res: Resp
     await prisma.groupMember.upsert({ where: { groupId_userId: { groupId: req.params.id, userId: req.user!.id } }, update: {}, create: { groupId: req.params.id, userId: req.user!.id } });
     res.json({ joined: true });
   } catch { res.status(500).json({ message: 'Failed' }); }
+});
+
+router.get('/groups/:id/messages', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const group = await prisma.studyGroup.findUnique({ where: { id: req.params.id }, select: { id: true, isPublic: true } });
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    const member = await prisma.groupMember.findUnique({ where: { groupId_userId: { groupId: req.params.id, userId: req.user!.id } } });
+    if (!group.isPublic && !member) return res.status(403).json({ message: 'Join the group to see messages' });
+
+    const messages = await prisma.groupMessage.findMany({
+      where: { groupId: req.params.id },
+      include: { user: { select: { name: true, username: true, avatar: true } } },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+    });
+
+    res.json(messages.map(message => ({
+      ...message,
+      author: message.user,
+      timeAgo: getAgo(message.createdAt),
+    })));
+  } catch {
+    res.status(500).json([]);
+  }
+});
+
+router.post('/groups/:id/messages', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ message: 'Message required' });
+
+    const group = await prisma.studyGroup.findUnique({ where: { id: req.params.id }, select: { id: true, isPublic: true } });
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    const member = await prisma.groupMember.findUnique({ where: { groupId_userId: { groupId: req.params.id, userId: req.user!.id } } });
+    if (!group.isPublic && !member) return res.status(403).json({ message: 'Join the group to chat' });
+
+    const message = await prisma.groupMessage.create({
+      data: { groupId: req.params.id, userId: req.user!.id, content: content.trim() },
+      include: { user: { select: { name: true, username: true, avatar: true } } },
+    });
+
+    res.status(201).json({
+      ...message,
+      author: message.user,
+      timeAgo: 'just now',
+    });
+  } catch {
+    res.status(500).json({ message: 'Failed to send message' });
+  }
 });
 
 router.post('/groups/:id/leave', authenticate, async (req: AuthRequest, res: Response) => {

@@ -1,6 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
-import { Brain, Code2, PenTool, BarChart3, Users, Zap, BookOpen, Target } from 'lucide-react';
+import { Brain, Code2, PenTool, BarChart3, Users, Zap, BookOpen, Target, Play } from 'lucide-react';
 
 const features = [
   {
@@ -12,6 +12,16 @@ const features = [
     iconBg: 'bg-violet-500/20',
     iconColor: 'text-violet-400',
     tag: 'AI-Powered',
+  },
+  {
+    icon: Play,
+    title: 'Dry Run Visualizer',
+    description: 'Trace variables, pointers, and state changes step-by-step for arrays, trees, graphs, and linked lists.',
+    color: 'from-cyan-500/20 to-sky-500/20',
+    border: 'border-cyan-500/20',
+    iconBg: 'bg-cyan-500/20',
+    iconColor: 'text-cyan-400',
+    tag: 'Trace',
   },
   {
     icon: Code2,

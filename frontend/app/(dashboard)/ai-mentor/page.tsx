@@ -49,6 +49,11 @@ export default function AIMentorPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    const problemParam = new URLSearchParams(window.location.search).get('problem');
+    if (problemParam) setCurrentProblem(problemParam);
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 

@@ -5,7 +5,6 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
 import cron from 'node-cron';
 dotenv.config();
 
@@ -25,9 +24,13 @@ import communityRouter from './routes/community';
 import newsRouter from './routes/news';
 import settingsRouter from './routes/settings';
 import canvasRouter from './routes/canvas';
+import notificationsRouter from './routes/notifications';
+import adminRouter from './routes/admin';
+import revisionRouter from './routes/revision';
 import { authLimiter, aiLimiter, syncLimiter } from './middleware/rateLimiter';
+import { connectMongo, prisma } from './lib/db';
+import { fetchUpcomingContests, queueContestRemindersForUser } from './services/contests';
 
-export const prisma = new PrismaClient({ log: ['error'] });
 const app = express();
 const httpServer = createServer(app);
 export const io = new Server(httpServer, { cors: { origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true } });
@@ -38,7 +41,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
-app.get('/health', async (_, res) => { try { await prisma.$queryRaw`SELECT 1`; res.json({ status: 'ok', ts: new Date() }); } catch { res.status(503).json({ status: 'error' }); } });
+app.get('/health', async (_, res) => { try { await connectMongo(); res.json({ status: 'ok', ts: new Date() }); } catch { res.status(503).json({ status: 'error' }); } });
 
 app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/auth', authLimiter, googleAuthRouter);
@@ -55,7 +58,10 @@ app.use('/api/leaderboard', leaderboardRouter);
 app.use('/api/community', communityRouter);
 app.use('/api/news', newsRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/revision', revisionRouter);
 app.use('/api/canvas', canvasRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/admin', adminRouter);
 
 io.on('connection', (socket) => {
   socket.on('join-room', (id: string) => socket.join(id));
@@ -72,8 +78,32 @@ cron.schedule('0 0 * * *', async () => {
   const tStr = new Date().toISOString().split('T')[0];
   const users = await prisma.user.findMany({ where: { streak: { gt: 0 } }, select: { id: true, lastActiveDate: true } });
   for (const u of users) {
+    if (!u) continue;
     const last = u.lastActiveDate?.toISOString().split('T')[0];
     if (last !== yStr && last !== tStr) await prisma.user.update({ where: { id: u.id }, data: { streak: 0 } });
+  }
+});
+
+cron.schedule('*/15 * * * *', async () => {
+  const contests = await fetchUpcomingContests();
+  const users = await prisma.user.findMany({
+    where: { notifContest: true },
+    select: { id: true, name: true, email: true, notifContest: true, notifEmail: true },
+  });
+
+  for (const user of users) {
+    await queueContestRemindersForUser(user as any, contests, { sendEmail: true });
+  }
+});
+
+cron.schedule('0 4 * * *', async () => {
+  try {
+    const users = await prisma.user.findMany({ where: { notifRevision: true }, select: { id: true } });
+    for (const u of users) {
+      await (await import('./services/revision')).queueRevisionForUser(u.id as string);
+    }
+  } catch (e) {
+    console.error('Revision queue cron failed', e);
   }
 });
 
@@ -83,6 +113,16 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 
 const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => console.log(`🚀 MindMesh running on http://localhost:${PORT}`));
+
+async function start() {
+  await connectMongo();
+  httpServer.listen(PORT, () => console.log(`🚀 MindMesh running on http://localhost:${PORT}`));
+}
+
+start().catch(err => {
+  console.error('Failed to start server', err);
+  process.exit(1);
+});
+
 process.on('SIGTERM', async () => { await prisma.$disconnect(); process.exit(0); });
 export default app;

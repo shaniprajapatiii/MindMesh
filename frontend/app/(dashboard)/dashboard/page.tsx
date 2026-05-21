@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { analyticsApi, dashboardApi } from '@/lib/api';
+import RevisionPanel from '@/components/dashboard/RevisionPanel';
 
 // Heatmap component
 function ActivityHeatmap({ data }: { data: Record<string, number> }) {
@@ -65,20 +67,35 @@ export default function DashboardPage() {
   const [recentProblems, setRecentProblems] = useState<any[]>([]);
   const [solvedOverTime, setSolvedOverTime] = useState<any[]>([]);
   const [topicData, setTopicData] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch dashboard data
     const fetchData = async () => {
       try {
-        const [statsRes, activityRes, recentRes] = await Promise.all([
-          fetch('/api/dashboard/stats'),
-          fetch('/api/dashboard/activity'),
-          fetch('/api/dashboard/recent-problems'),
+        const [statsData, activityMap, recentList, analyticsPayload] = await Promise.all([
+          dashboardApi.stats(),
+          dashboardApi.activity(),
+          dashboardApi.recentProblems(),
+          analyticsApi.get('month'),
         ]);
-        if (statsRes.ok) setStats(await statsRes.json());
-        if (activityRes.ok) setActivityData(await activityRes.json());
-        if (recentRes.ok) setRecentProblems(await recentRes.json());
+        setStats(statsData);
+        setActivityData(activityMap);
+        setRecentProblems(recentList);
+        setAnalyticsData(analyticsPayload);
+
+        setSolvedOverTime((analyticsPayload?.monthlyData || []).map((entry: any) => ({
+          month: entry.month,
+          problems: (entry.easy || 0) + (entry.medium || 0) + (entry.hard || 0),
+        })));
+
+        const topicPalette = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#84cc16'];
+        setTopicData(
+          Object.entries(analyticsPayload?.topicBreakdown || {})
+            .map(([name, value]: any, index) => ({ name, value: value.solved || 0, color: topicPalette[index % topicPalette.length] }))
+            .filter((entry: any) => entry.value > 0)
+            .sort((a: any, b: any) => b.value - a.value),
+        );
       } catch (e) {
         console.error('Failed to fetch dashboard data', e);
       } finally {
@@ -86,17 +103,6 @@ export default function DashboardPage() {
       }
     };
     fetchData();
-
-    // Mock chart data for display
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    setSolvedOverTime(months.map((m, i) => ({ month: m, problems: Math.floor(Math.random() * 80 + 20), submissions: Math.floor(Math.random() * 120 + 40) })));
-    setTopicData([
-      { name: 'Arrays', value: 45, color: '#6366f1' },
-      { name: 'Trees', value: 28, color: '#8b5cf6' },
-      { name: 'DP', value: 22, color: '#06b6d4' },
-      { name: 'Graphs', value: 18, color: '#10b981' },
-      { name: 'Others', value: 15, color: '#f59e0b' },
-    ]);
   }, []);
 
   const quickStats = [
@@ -308,6 +314,15 @@ export default function DashboardPage() {
               ))
             )}
           </div>
+        </motion.div>
+        {/* Revision queue panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass-card rounded-xl p-5"
+        >
+          <RevisionPanel />
         </motion.div>
       </div>
 

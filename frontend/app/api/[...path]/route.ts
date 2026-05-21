@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-options';
 
-const BACKEND = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000';
 
 async function proxyRequest(req: NextRequest, path: string) {
   const session = await getServerSession(authOptions);

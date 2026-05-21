@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
-import { prisma } from '../index';
+import { prisma } from '../lib/db';
 import { generateToken } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 

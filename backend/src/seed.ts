@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { connectMongo, prisma } from './lib/db';
 
 const PROBLEMS = [
   // Arrays
@@ -87,9 +85,25 @@ const SHEETS = [
 ];
 
 async function seed() {
+  await connectMongo();
   console.log('🌱 Starting database seed...');
 
   // Clear existing data
+  await prisma.noteTag.deleteMany({});
+  await prisma.note.deleteMany({});
+  await prisma.submission.deleteMany({});
+  await prisma.userProblemStatus.deleteMany({});
+  await prisma.problemBookmark.deleteMany({});
+  await prisma.sheetProgress.deleteMany({});
+  await prisma.activityLog.deleteMany({});
+  await prisma.revisionQueue.deleteMany({});
+  await prisma.userBadge.deleteMany({});
+  await prisma.communityPost.deleteMany({});
+  await prisma.postLike.deleteMany({});
+  await prisma.postReply.deleteMany({});
+  await prisma.groupMember.deleteMany({});
+  await prisma.studyGroup.deleteMany({});
+  await prisma.contestReminder.deleteMany({});
   await prisma.sheetItem.deleteMany();
   await prisma.dSASheet.deleteMany();
   await prisma.problem.deleteMany();

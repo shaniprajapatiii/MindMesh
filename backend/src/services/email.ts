@@ -55,6 +55,29 @@ export async function sendStreakReminderEmail(to: string, name: string, streak: 
   });
 }
 
+export async function sendContestReminderEmail(
+  to: string,
+  name: string,
+  contest: { title: string; message: string; platform: string; name: string; startTime: string; duration: string; url: string },
+) {
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `${contest.title}: ${contest.platform} ${contest.name}`,
+    html: `<div style="font-family:system-ui;max-width:520px;margin:0 auto;background:#0a0a0f;color:#f0f0f8;padding:32px;border-radius:16px;border:1px solid rgba(99,102,241,0.3)">
+      <h2 style="color:#6366f1;margin:0 0 8px">MindMesh contest reminder</h2>
+      <p style="color:#9090a8;margin:0 0 24px;font-size:14px">Hey ${name}, you have a live contest reminder.</p>
+      <div style="padding:16px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.18);margin:16px 0">
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">${contest.platform}: ${contest.name}</div>
+        <div style="color:#c7c7d9;font-size:14px;line-height:1.6">${contest.message}</div>
+        <div style="color:#9090a8;font-size:13px;margin-top:12px">Starts: ${new Date(contest.startTime).toLocaleString()}</div>
+        <div style="color:#9090a8;font-size:13px">Duration: ${contest.duration}</div>
+      </div>
+      <a href="${contest.url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:600;margin-top:8px">Open contest →</a>
+    </div>`,
+  });
+}
+
 export async function sendPasswordResetEmail(to: string, otp: string) {
   await transporter.sendMail({
     from: FROM, to,

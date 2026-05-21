@@ -47,6 +47,24 @@ export const dashboardApi = {
   recentProblems: () => apiFetch<any[]>('/dashboard/recent-problems'),
 };
 
+// ── Notifications ───────────────────────────────────────────────────
+export const notificationsApi = {
+  list: () => apiFetch<any[]>('/notifications'),
+  markRead: (id: string) => apiFetch(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllRead: () => apiFetch('/notifications/read-all', { method: 'POST' }),
+};
+
+// ── Revision ─────────────────────────────────────────────────────────
+export const revisionApi = {
+  list: () => apiFetch<any[]>('/revision'),
+  markDone: (id: string) => apiFetch(`/revision/${id}/done`, { method: 'POST' }),
+};
+
+// ── Admin ────────────────────────────────────────────────────────────
+export const adminApi = {
+  overview: () => apiFetch<any>('/admin/overview'),
+};
+
 // ── Analytics ─────────────────────────────────────────────────────────
 export const analyticsApi = {
   get: (period: string) => apiFetch<any>(`/analytics?period=${period}`),
@@ -71,8 +89,11 @@ export const profileApi = {
 // ── Code ──────────────────────────────────────────────────────────────
 export const codeApi = {
   run: (code: string, language: string, testCases: string) => apiFetch<any>('/code/run', { method: 'POST', body: JSON.stringify({ code, language, testCases }) }),
+  execute: (code: string, language: string, stdin: string) => apiFetch<any>('/code/execute', { method: 'POST', body: JSON.stringify({ code, language, stdin }) }),
+  compile: (code: string, language: string) => apiFetch<any>('/code/compile', { method: 'POST', body: JSON.stringify({ code, language }) }),
   submit: (code: string, language: string, problemId: string) => apiFetch<any>('/code/submit', { method: 'POST', body: JSON.stringify({ code, language, problemId }) }),
   submissions: (problemId: string) => apiFetch<any[]>(`/code/submissions/${problemId}`),
+  history: (params: Record<string, string>) => apiFetch<any[]>(`/code/submissions?${new URLSearchParams(params)}`),
 };
 
 // ── AI ────────────────────────────────────────────────────────────────
@@ -109,6 +130,8 @@ export const communityApi = {
   createGroup: (data: any) => apiFetch<any>('/community/groups', { method: 'POST', body: JSON.stringify(data) }),
   joinGroup: (id: string) => apiFetch<any>(`/community/groups/${id}/join`, { method: 'POST' }),
   leaveGroup: (id: string) => apiFetch<any>(`/community/groups/${id}/leave`, { method: 'POST' }),
+  groupMessages: (groupId: string) => apiFetch<any[]>(`/community/groups/${groupId}/messages`),
+  sendGroupMessage: (groupId: string, content: string) => apiFetch<any>(`/community/groups/${groupId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
 };
 
 // ── News ──────────────────────────────────────────────────────────────

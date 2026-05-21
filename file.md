@@ -2,7 +2,7 @@
 
 MindMesh/
 ├── package.json                    ← Monorepo scripts (npm run dev, setup, etc.)
-├── docker-compose.yml              ← Postgres + Redis + Backend + Frontend
+├── docker-compose.yml              ← MongoDB + Redis + Backend + Frontend
 ├── README.md
 │
 ├── frontend/                       ← Next.js 14 + TypeScript
@@ -36,8 +36,6 @@ MindMesh/
 │   └── types/index.ts              ← All TypeScript interfaces
 │
 └── backend/                        ← Node.js + Express + TypeScript
-    ├── prisma/schema.prisma        ← 15 DB models
-    ├── prisma/migrations/          ← Migration files
     └── src/
         ├── index.ts                ← Server, Socket.io, cron jobs
         ├── middleware/             ← auth, rateLimiter, validate
@@ -52,30 +50,25 @@ MindMesh/
 ```
 
 ```
-# 1. Install PostgreSQL & Redis (if not already)
+# 1. Install MongoDB & Redis (if not already)
 # Mac:
-brew install postgresql redis
-brew services start postgresql
+brew install mongodb-community redis
+brew services start mongodb-community
 brew services start redis
 
 # Ubuntu/Debian:
-sudo apt install postgresql redis-server -y
-sudo systemctl start postgresql redis-server
-
-# 2. Create database
-psql -U postgres -c "CREATE DATABASE mindmesh;"
+sudo apt install mongodb-org redis-server -y
+sudo systemctl start mongod redis-server
 
 # 3. Setup Backend
 cd MindMesh/backend
 npm install
 cp .env.example .env
 # Edit .env — set these minimum required values:
-#   DATABASE_URL=postgresql://postgres:YOUR_PG_PASSWORD@localhost:5432/mindmesh
+#   MONGODB_URI=mongodb://localhost:27017/mindmesh
 #   JWT_SECRET=any-random-long-string
 #   ANTHROPIC_API_KEY=sk-ant-...   (for AI features)
 #   SMTP_USER + SMTP_PASS          (for email OTP)
-npx prisma generate
-npx prisma migrate dev --name init
 npm run db:seed
 npm run dev   # runs on http://localhost:5000
 
@@ -99,7 +92,7 @@ npm run dev   # runs on http://localhost:3000
 cd MindMesh
 docker-compose up --build
 # This will start 4 containers:
-#   - postgres (DB)
+#   - mongo (DB)
 #   - redis (for caching + real-time features)
 #   - backend (Node.js server on port 5000)
 #   - frontend (Next.js app on port 3000)
@@ -110,5 +103,5 @@ docker-compose up --build
 cp backend/.env.example backend/.env     # Add ANTHROPIC_API_KEY + others
 cp frontend/.env.example frontend/.env.local
 docker-compose up -d
-docker exec mindmesh-backend npx prisma migrate dev --name init && docker exec mindmesh-backend npm run db:seed
+docker exec mindmesh-backend npm run db:seed
 ```

@@ -1,38 +1,53 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Bell, X, CheckCircle, Trophy, Flame, Brain } from 'lucide-react';
+import { Bell, X, CheckCircle, Trophy, Flame, Brain, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useClickOutside } from '@/hooks';
+import { notificationsApi } from '@/lib/api';
 
 interface Notification {
   id: string;
-  type: 'badge' | 'streak' | 'ai' | 'system';
+  type: 'badge' | 'streak' | 'ai' | 'system' | 'contest';
   title: string;
   message: string;
   read: boolean;
   createdAt: string;
 }
 
-const ICONS = { badge: Trophy, streak: Flame, ai: Brain, system: CheckCircle };
-const COLORS = { badge: 'text-amber-400', streak: 'text-orange-400', ai: 'text-violet-400', system: 'text-indigo-400' };
+const ICONS = { badge: Trophy, streak: Flame, ai: Brain, system: CheckCircle, contest: CalendarDays };
+const COLORS = { badge: 'text-amber-400', streak: 'text-orange-400', ai: 'text-violet-400', system: 'text-indigo-400', contest: 'text-cyan-400' };
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
   const unread = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
-    // Mock notifications — replace with real API call
-    setNotifications([
-      { id: '1', type: 'streak', title: 'Streak milestone!', message: 'You hit a 7-day streak 🔥', read: false, createdAt: new Date().toISOString() },
-      { id: '2', type: 'ai', title: 'AI Notes Ready', message: 'Notes for "Two Sum" are generated', read: false, createdAt: new Date().toISOString() },
-      { id: '3', type: 'badge', title: 'Badge Earned', message: 'You earned "First Blood" badge 🎯', read: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
-    ]);
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await notificationsApi.list();
+        if (active) setNotifications(data as Notification[]);
+      } catch {
+        if (active) setNotifications([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => { active = false; };
   }, []);
 
-  const markAll = () => setNotifications(n => n.map(x => ({ ...x, read: true })));
-  const dismiss = (id: string) => setNotifications(n => n.filter(x => x.id !== id));
+  const markAll = async () => {
+    setNotifications(n => n.map(x => ({ ...x, read: true })));
+    try { await notificationsApi.markAllRead(); } catch {}
+  };
+  const dismiss = async (id: string) => {
+    setNotifications(n => n.map(x => x.id === id ? ({ ...x, read: true }) : x));
+    try { await notificationsApi.markRead(id); } catch {}
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -54,7 +69,9 @@ export function NotificationBell() {
               {unread > 0 && <button onClick={markAll} className="text-xs text-indigo-400 hover:text-indigo-300">Mark all read</button>}
             </div>
             <div className="max-h-72 overflow-y-auto">
-              {notifications.length === 0 ? (
+              {loading ? (
+                <div className="p-6 text-center text-gray-600 text-sm">Loading live activity...</div>
+              ) : notifications.length === 0 ? (
                 <div className="p-6 text-center text-gray-600 text-sm">No notifications</div>
               ) : (
                 notifications.map(n => {
@@ -67,6 +84,7 @@ export function NotificationBell() {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-semibold text-white">{n.title}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{n.message}</div>
+                        <div className="text-[10px] text-gray-600 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                       </div>
                       <button onClick={() => dismiss(n.id)} className="p-1 text-gray-600 hover:text-gray-400 flex-shrink-0">
                         <X className="w-3 h-3" />

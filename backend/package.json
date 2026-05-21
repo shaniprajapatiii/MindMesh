@@ -6,12 +6,12 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:prod": "prisma migrate deploy",
-    "db:generate": "prisma generate",
+    "db:migrate": "node -e \"console.log('MongoDB uses seed-based setup instead of migrations')\"",
+    "db:migrate:prod": "node -e \"console.log('MongoDB uses seed-based setup instead of migrations')\"",
     "db:seed": "tsx src/seed.ts",
-    "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset --force && tsx src/seed.ts",
+    "db:generate": "node -e \"console.log('MongoDB does not require client generation')\"",
+    "db:studio": "node -e \"console.log('Use MongoDB Compass or mongosh for MongoDB')\"",
+    "db:reset": "tsx src/seed.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,7 +20,6 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
     "dotenv": "^16.4.5",
-    "@prisma/client": "^5.12.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.13",
@@ -34,6 +33,7 @@
     "openai": "^4.33.0",
     "rss-parser": "^3.13.0",
     "google-auth-library": "^9.7.0",
+    "mongoose": "^8.13.1",
     "uuid": "^9.0.1",
     "tsx": "^4.7.2",
     "typescript": "^5.4.3"
@@ -47,7 +47,6 @@
     "@types/multer": "^1.4.11",
     "@types/uuid": "^9.0.8",
     "@types/node": "^20.12.0",
-    "@types/nodemailer": "^6.4.14",
-    "prisma": "^5.12.0"
+    "@types/nodemailer": "^6.4.14"
   }
 }

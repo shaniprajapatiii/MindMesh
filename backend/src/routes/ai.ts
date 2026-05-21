@@ -167,6 +167,66 @@ router.post('/generate-tests', authenticate, async (req: AuthRequest, res: Respo
   } catch { res.status(500).json({ message: 'Failed to generate tests' }); }
 });
 
+// POST /api/ai/dry-run - Generate a step-by-step dry run trace
+router.post('/dry-run', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { problem, code, language, input, approach } = req.body;
+
+    const prompt = `Create a dry run visualization for this DSA solution.
+
+Problem: ${problem || 'Unknown problem'}
+Language: ${language || 'javascript'}
+Approach: ${approach || 'not provided'}
+Input: ${input || 'not provided'}
+
+Code:
+\`\`\`${language || 'text'}
+${code || ''}
+\`\`\`
+
+Return ONLY valid JSON in this shape:
+{
+  "title": "Short title",
+  "summary": "1-2 sentence summary",
+  "pattern": "Pattern name",
+  "complexity": { "time": "...", "space": "..." },
+  "variables": [{ "name": "i", "value": "0", "note": "index pointer" }],
+  "steps": [
+    {
+      "step": 1,
+      "title": "Initialization",
+      "explanation": "What happens here",
+      "state": { "pointer": "0", "result": "[]" },
+      "highlight": ["nums[0]", "map"]
+    }
+  ],
+  "takeaways": ["...", "..."]
+}`;
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.json(getFallbackDryRun(problem, input, approach));
+    }
+
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1800,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const text = response.content.find((c: any) => c.type === 'text')?.text || '';
+    try {
+      const parsed = JSON.parse(text.replace(/```json?|```/g, '').trim());
+      res.json(parsed);
+    } catch {
+      res.json(getFallbackDryRun(problem, input, approach));
+    }
+  } catch (e) {
+    console.error('Dry run generation error:', e);
+    res.status(500).json({ message: 'Failed to generate dry run' });
+  }
+});
+
 // POST /api/ai/roadmap - Generate personalized DSA roadmap
 router.post('/roadmap', authenticate, async (req: AuthRequest, res: Response) => {
   try {
@@ -206,6 +266,26 @@ function extractTags(topic: string, content: string): string[] {
 
   tags.push('ai-generated');
   return [...new Set(tags)];
+}
+
+function getFallbackDryRun(problem?: string, input?: string, approach?: string) {
+  return {
+    title: problem || 'Dry Run Trace',
+    summary: `A guided trace for ${problem || 'the selected problem'} using ${approach || 'your current approach'}.`,
+    pattern: approach || 'HashMap + Iteration',
+    complexity: { time: 'O(n)', space: 'O(n)' },
+    variables: [
+      { name: 'i', value: '0', note: 'Traversal index' },
+      { name: 'seen', value: '{}', note: 'Tracked values' },
+      { name: 'answer', value: '[]', note: 'Result container' },
+    ],
+    steps: [
+      { step: 1, title: 'Read the input', explanation: `Start with ${input || 'the provided input'} and initialize your working state.`, state: { i: '0', seen: '{}', answer: '[]' }, highlight: ['input'] },
+      { step: 2, title: 'Check complement', explanation: 'For each element, compute what value you still need and look it up in the tracked structure.', state: { i: '1', seen: '{ value: index }', answer: '[]' }, highlight: ['complement', 'hash map'] },
+      { step: 3, title: 'Return the answer', explanation: 'When the matching pair is found, stop the trace and return the indices.', state: { i: 'done', seen: 'final', answer: '[left, right]' }, highlight: ['return'] },
+    ],
+    takeaways: ['Track the state after each iteration.', 'Highlight the key invariant that makes the approach work.', 'Use this trace to explain the algorithm in interviews.'],
+  };
 }
 
 export default router;

@@ -8,12 +8,13 @@ import {
   Brain, Play, ZoomIn, ZoomOut, Move
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getSocket } from '@/lib/socket';
 
 // Dynamically import to avoid SSR issues
 const Stage = dynamic(() => import('react-konva').then(m => m.Stage), { ssr: false });
 const Layer = dynamic(() => import('react-konva').then(m => m.Layer), { ssr: false });
 const Rect = dynamic(() => import('react-konva').then(m => m.Rect), { ssr: false });
-const Circle: any = dynamic(() => import('react-konva').then(m => m.Circle), { ssr: false });
+const CircleShape: any = dynamic(() => import('react-konva').then(m => m.Circle), { ssr: false });
 const Line = dynamic(() => import('react-konva').then(m => m.Line), { ssr: false });
 const Text = dynamic(() => import('react-konva').then(m => m.Text), { ssr: false });
 const Arrow = dynamic(() => import('react-konva').then(m => m.Arrow), { ssr: false });
@@ -153,10 +154,52 @@ export default function CanvasPage() {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [dsCount, setDsCount] = useState(5);
+  const [roomId, setRoomId] = useState('mindmesh-canvas');
   const stageRef = useRef<any>(null);
   const containerRef = useRef<any>(null);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const currentLine = useRef<number[]>([]);
+  const socketRef = useRef<any>(null);
+  const roomIdRef = useRef('mindmesh-canvas');
+  const syncingRemoteRef = useRef(false);
+
+  const applyBoardState = (newShapes: any[], newLines: any[]) => {
+    syncingRemoteRef.current = true;
+    setShapes(newShapes);
+    setLines(newLines);
+    saveHistory(newShapes, newLines);
+    window.setTimeout(() => { syncingRemoteRef.current = false; }, 0);
+  };
+
+  const broadcastBoardState = (newShapes: any[], newLines: any[]) => {
+    const socket = socketRef.current;
+    if (!socket || syncingRemoteRef.current) return;
+    socket.emit('canvas-update', { roomId: roomIdRef.current, shapes: newShapes, lines: newLines });
+  };
+
+  useEffect(() => {
+    const room = new URLSearchParams(window.location.search).get('room') || 'mindmesh-canvas';
+    roomIdRef.current = room;
+    setRoomId(room);
+  }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    socketRef.current = socket;
+    if (socket) {
+      socket.emit('join-room', roomIdRef.current);
+      const handleRemoteCanvas = (payload: any) => {
+        if (!payload || payload.roomId !== roomIdRef.current) return;
+        applyBoardState(Array.isArray(payload.shapes) ? payload.shapes : [], Array.isArray(payload.lines) ? payload.lines : []);
+      };
+      socket.on('canvas-update', handleRemoteCanvas);
+      return () => {
+        socket.emit('leave-room', roomIdRef.current);
+        socket.off('canvas-update', handleRemoteCanvas);
+      };
+    }
+    return undefined;
+  }, [roomId]);
 
   useEffect(() => {
     const update = () => {
@@ -195,18 +238,16 @@ export default function CanvasPage() {
   };
 
   const clearCanvas = () => {
-    setShapes([]);
-    setLines([]);
-    saveHistory([], []);
+    applyBoardState([], []);
+    broadcastBoardState([], []);
   };
 
   const loadTemplate = (template: typeof DS_TEMPLATES[0]) => {
     const { nodes, arrows } = template.generate(dsCount);
     const newShapes = nodes.map(n => ({ ...n, color }));
     const newArrows = arrows.map(a => ({ ...a, isLine: false, isArrow: true, points: [a.from.x, a.from.y, a.to.x, a.to.y], color }));
-    setShapes(newShapes);
-    setLines(newArrows);
-    saveHistory(newShapes, newArrows);
+    applyBoardState(newShapes, newArrows);
+    broadcastBoardState(newShapes, newArrows);
     toast.success(`${template.label} loaded!`);
   };
 
@@ -262,6 +303,7 @@ export default function CanvasPage() {
     setShapes(cleanShapes);
     setLines(cleanLines);
     saveHistory(cleanShapes, cleanLines);
+    broadcastBoardState(cleanShapes, cleanLines);
   };
 
   const exportCanvas = () => {
@@ -286,9 +328,8 @@ export default function CanvasPage() {
       });
       const data = await res.json();
       if (data.shapes) {
-        setShapes(data.shapes);
-        setLines(data.lines || []);
-        saveHistory(data.shapes, data.lines || []);
+        applyBoardState(data.shapes, data.lines || []);
+        broadcastBoardState(data.shapes, data.lines || []);
         toast.success('AI diagram generated!');
       }
     } catch {
@@ -380,6 +421,9 @@ export default function CanvasPage() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <span className="hidden md:inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs text-gray-400">
+              Live room: <span className="text-white">{roomId}</span>
+            </span>
             <button onClick={() => setShowAiPanel(!showAiPanel)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showAiPanel ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-white/5 text-gray-400 hover:text-white border border-white/8'}`}>
               <Brain className="w-3.5 h-3.5" />
               AI Draw
@@ -487,7 +531,7 @@ export default function CanvasPage() {
                   if (shape.type === 'circle') {
                     return (
                       <Group key={shape.id} draggable={tool === 'select'}>
-                        <Circle
+                        <CircleShape
                           x={shape.x} y={shape.y}
                           radius={Math.max(1, shape.r || 30)}
                           fill={shape.fill || '#1e1e2d'}

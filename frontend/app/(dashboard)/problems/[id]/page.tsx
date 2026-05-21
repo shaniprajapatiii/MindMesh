@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ExternalLink, BookOpen, Code2, FileText, ChevronRight, CheckCircle, Clock, Tag, Brain, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ExternalLink, BookOpen, Code2, FileText, ChevronRight, CheckCircle, Clock, Tag, Brain, Bookmark, BookmarkCheck, Play } from 'lucide-react';
 
 export default function ProblemDetailPage() {
   const params = useParams();
@@ -111,6 +111,12 @@ export default function ProblemDetailPage() {
               <CheckCircle className="w-4 h-4" />
               {problem.userStatus === 'solved' ? 'Solved' : 'Mark Solved'}
             </button>
+            <Link href={`/dry-run?problem=${encodeURIComponent(problem.title)}`} className="btn btn-secondary text-sm px-4 py-2 gap-2">
+              <Play className="w-4 h-4" /> Dry Run
+            </Link>
+            <Link href={`/ai-mentor?problem=${encodeURIComponent(problem.title)}`} className="btn btn-secondary text-sm px-4 py-2 gap-2">
+              <Brain className="w-4 h-4" /> AI Mentor
+            </Link>
             <Link href={`/editor?problem=${id}`} className="btn btn-primary text-sm px-4 py-2 gap-2">
               <Code2 className="w-4 h-4" /> Solve
             </Link>

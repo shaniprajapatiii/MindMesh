@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../index';
+import { prisma } from '../lib/db';
 
 export interface AuthRequest extends Request {
   user?: { id: string; email: string; role: string };
@@ -15,7 +15,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const user = await prisma.user.findUnique({ where: { id: decoded.id }, select: { id: true, email: true, role: true } });
     if (!user) return res.status(401).json({ message: 'User not found' });
 
-    req.user = user;
+    req.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch {
     res.status(401).json({ message: 'Invalid token' });

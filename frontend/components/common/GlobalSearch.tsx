@@ -86,7 +86,7 @@ export function GlobalSearch() {
                 {!loading && results.length === 0 && !query && (
                   <div className="p-4 text-xs text-gray-600">
                     <p className="mb-2 font-medium text-gray-500">Quick navigation</p>
-                    {[{href:'/problems',label:'Browse Problems'},{href:'/notes',label:'My Notes'},{href:'/sheets',label:'DSA Sheets'},{href:'/ai-mentor',label:'AI Mentor'}].map(l => (
+                    {[{href:'/problems',label:'Browse Problems'},{href:'/notes',label:'My Notes'},{href:'/sheets',label:'DSA Sheets'},{href:'/ai-mentor',label:'AI Mentor'},{href:'/dry-run',label:'Dry Run Visualizer'}].map(l => (
                       <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all">{l.label}</Link>
                     ))}
                   </div>

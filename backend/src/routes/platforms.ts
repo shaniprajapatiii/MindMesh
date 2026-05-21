@@ -1,7 +1,8 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { prisma } from '../index';
+import { prisma } from '../lib/db';
 import axios from 'axios';
+import { fetchUpcomingContests } from '../services/contests';
 
 const router = Router();
 
@@ -45,37 +46,7 @@ router.post('/sync/:platform', authenticate, async (req: AuthRequest, res: Respo
 // GET /api/platforms/contests - Upcoming contests
 router.get('/contests', async (_, res: Response) => {
   try {
-    const contests: any[] = [];
-
-    // Codeforces upcoming contests
-    try {
-      const { data } = await axios.get('https://codeforces.com/api/contest.list?gym=false', { timeout: 5000 });
-      if (data.status === 'OK') {
-        const upcoming = data.result.filter((c: any) => c.phase === 'BEFORE').slice(0, 5);
-        upcoming.forEach((c: any) => {
-          contests.push({
-            id: `cf-${c.id}`, platform: 'Codeforces', name: c.name,
-            startTime: new Date(c.startTimeSeconds * 1000).toISOString(),
-            duration: Math.round(c.durationSeconds / 3600) + 'h',
-            url: `https://codeforces.com/contest/${c.id}`,
-          });
-        });
-      }
-    } catch {}
-
-    // LeetCode weekly/biweekly (static schedule)
-    const now = new Date();
-    const nextSaturday = new Date(now);
-    nextSaturday.setDate(now.getDate() + (6 - now.getDay() + 7) % 7);
-    nextSaturday.setHours(10, 30, 0, 0);
-    contests.push({
-      id: 'lc-weekly', platform: 'LeetCode', name: 'Weekly Contest',
-      startTime: nextSaturday.toISOString(), duration: '1.5h',
-      url: 'https://leetcode.com/contest/',
-    });
-
-    contests.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-    res.json(contests);
+    res.json(await fetchUpcomingContests());
   } catch { res.status(500).json([]); }
 });
 

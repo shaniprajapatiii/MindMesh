@@ -9,7 +9,7 @@ import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Code2, BookOpen, PenTool, BarChart3, Users, Trophy,
   Newspaper, Target, Settings, LogOut, Menu, X, Zap, ChevronRight,
-  Brain, GitBranch, Palette, Play, Star, Bell, Search
+  Brain, GitBranch, Palette, Play, Star, Bell, Search, Shield
 } from 'lucide-react';
 
 const navItems = [
@@ -17,15 +17,19 @@ const navItems = [
   { href: '/problems', icon: Code2, label: 'Problems', section: 'main' },
   { href: '/editor', icon: Play, label: 'Code Editor', section: 'main' },
   { href: '/canvas', icon: Palette, label: 'DS Canvas', section: 'main', badge: 'New' },
+  { href: '/dry-run', icon: Brain, label: 'Dry Run Visualizer', section: 'main', badge: 'New' },
   { href: '/notes', icon: BookOpen, label: 'Notes', section: 'learn' },
   { href: '/sheets', icon: Target, label: 'DSA Sheets', section: 'learn' },
   { href: '/roadmap', icon: GitBranch, label: 'Roadmaps', section: 'learn' },
   { href: '/ai-mentor', icon: Brain, label: 'AI Mentor', section: 'ai', badge: 'AI' },
+  { href: '/contests', icon: Trophy, label: 'Contests', section: 'progress', badge: 'Live' },
   { href: '/analytics', icon: BarChart3, label: 'Analytics', section: 'progress' },
+  { href: '/submissions', icon: Code2, label: 'Submissions', section: 'progress' },
   { href: '/profile', icon: Star, label: 'Profile', section: 'social' },
   { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', section: 'social' },
   { href: '/community', icon: Users, label: 'Community', section: 'social' },
   { href: '/news', icon: Newspaper, label: 'Dev News', section: 'other' },
+  { href: '/admin', icon: Shield, label: 'Admin', section: 'other', badge: 'Ops' },
   { href: '/settings', icon: Settings, label: 'Settings', section: 'other' },
 ];
 
@@ -43,7 +47,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [notifications] = useState(3);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex">
@@ -189,12 +192,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative p-2 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 transition-all">
-              <NotificationBell />
-              {notifications > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full" />
-              )}
-            </button>
+            <NotificationBell />
             <Link href="/profile">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-sm font-bold text-white cursor-pointer">
                 {session?.user?.name?.[0] || 'U'}

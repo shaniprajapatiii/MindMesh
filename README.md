@@ -7,7 +7,6 @@ Track LeetCode, Codeforces, CodeChef, GFG with AI Mentor, Canvas Visualizer, Cod
 cp backend/.env.example backend/.env       # Add ANTHROPIC_API_KEY + others
 cp frontend/.env.example frontend/.env.local
 docker-compose up -d
-docker exec mindmesh-backend npx prisma migrate dev --name init
 docker exec mindmesh-backend npm run db:seed
 # Open http://localhost:3000
 # Demo: demo@mindmesh.dev / demo123456
@@ -16,8 +15,7 @@ docker exec mindmesh-backend npm run db:seed
 ## Manual Setup
 ```bash
 npm run install:all   # installs root + frontend + backend
-# Edit backend/.env with DATABASE_URL, secrets, API keys
-npm run db:migrate
+# Edit backend/.env with MONGODB_URI, secrets, API keys
 npm run db:seed
 npm run dev           # starts both servers
 ```
@@ -32,8 +30,8 @@ npm run dev           # starts both servers
 ```
 MindMesh/
 ├── frontend/          Next.js 14 + TypeScript + Tailwind
-├── backend/           Node.js + Express + Prisma + PostgreSQL
-├── docker-compose.yml Postgres + Redis + Services
+├── backend/           Node.js + Express + Mongoose + MongoDB
+├── docker-compose.yml MongoDB + Redis + Services
 └── package.json       Monorepo scripts
 ```
 
@@ -44,4 +42,4 @@ MindMesh/
 
 ## Tech Stack
 Frontend: Next.js 14, Tailwind CSS, Framer Motion, Monaco Editor, Recharts, Konva, Zustand
-Backend: Express, Prisma, PostgreSQL, Redis, Socket.io, Anthropic Claude, node-cron
+Backend: Express, Mongoose, MongoDB, Redis, Socket.io, Anthropic Claude, node-cron
