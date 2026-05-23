@@ -41,10 +41,12 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`/api/platforms/sync/${platform}`, { method: 'POST' });
       const data = await res.json();
-      if (data.success) toast.success(`${platform} synced! ${data.solved} problems found.`);
+      if (data.success) toast.success(`${platform} synced! ${data.solved ?? 0} problems found.`);
       else toast.error(data.message || 'Sync failed');
     } catch { toast.error('Sync failed'); } finally { setSyncing(null); }
   };
+
+  const syncablePlatforms = ['leetcode', 'codeforces', 'codechef', 'gfg'];
 
   const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
     <button onClick={() => onChange(!value)} className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${value ? 'bg-indigo-500' : 'bg-white/10'}`}>
@@ -101,14 +103,14 @@ export default function SettingsPage() {
               {section === 'platforms' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-5 space-y-4">
                   <h3 className="text-white font-semibold">Platform Connections</h3>
-                  <p className="text-gray-500 text-sm">Connect your competitive programming accounts to sync your progress automatically.</p>
+                  <p className="text-gray-500 text-sm">Connect your competitive programming accounts to sync your progress automatically. Live sync is available for LeetCode, Codeforces, CodeChef, and GFG.</p>
                   {[
-                    { key: 'leetcodeId', label: 'LeetCode', icon: '⚡', color: 'text-amber-400', placeholder: 'your_username', url: 'https://leetcode.com' },
-                    { key: 'codeforcesId', label: 'Codeforces', icon: '🏆', color: 'text-blue-400', placeholder: 'your_handle', url: 'https://codeforces.com' },
-                    { key: 'codechefId', label: 'CodeChef', icon: '👨‍🍳', color: 'text-orange-400', placeholder: 'your_username', url: 'https://codechef.com' },
-                    { key: 'gfgId', label: 'GeeksforGeeks', icon: '🧠', color: 'text-green-400', placeholder: 'your_username', url: 'https://geeksforgeeks.org' },
-                    { key: 'githubId', label: 'GitHub', icon: '🐙', color: 'text-white', placeholder: 'your_username', url: 'https://github.com' },
-                    { key: 'atcoderId', label: 'AtCoder', icon: '🎯', color: 'text-gray-300', placeholder: 'your_username', url: 'https://atcoder.jp' },
+                    { key: 'leetcodeId', label: 'LeetCode', icon: '⚡', color: 'text-amber-400', placeholder: 'your_username', syncable: true },
+                    { key: 'codeforcesId', label: 'Codeforces', icon: '🏆', color: 'text-blue-400', placeholder: 'your_handle', syncable: true },
+                    { key: 'codechefId', label: 'CodeChef', icon: '👨‍🍳', color: 'text-orange-400', placeholder: 'your_username', syncable: true },
+                    { key: 'gfgId', label: 'GeeksforGeeks', icon: '🧠', color: 'text-green-400', placeholder: 'your_username', syncable: true },
+                    { key: 'githubId', label: 'GitHub', icon: '🐙', color: 'text-white', placeholder: 'your_username', syncable: false },
+                    { key: 'atcoderId', label: 'AtCoder', icon: '🎯', color: 'text-gray-300', placeholder: 'your_username', syncable: false },
                   ].map(p => (
                     <div key={p.key} className="flex items-center gap-4 py-3 border-b border-white/5 last:border-0">
                       <span className="text-xl w-8 flex-shrink-0">{p.icon}</span>
@@ -121,14 +123,18 @@ export default function SettingsPage() {
                           className="w-full text-sm"
                         />
                       </div>
-                      <button
-                        onClick={() => syncPlatform(p.key.replace('Id', ''))}
-                        disabled={!settings[p.key] || syncing === p.key.replace('Id', '')}
-                        className="btn btn-secondary text-xs px-3 py-2 gap-1.5 flex-shrink-0 disabled:opacity-40"
-                      >
-                        <RefreshCw className={`w-3 h-3 ${syncing === p.key.replace('Id', '') ? 'animate-spin' : ''}`} />
-                        Sync
-                      </button>
+                      {p.syncable ? (
+                        <button
+                          onClick={() => syncPlatform(p.key.replace('Id', ''))}
+                          disabled={!settings[p.key] || syncing === p.key.replace('Id', '')}
+                          className="btn btn-secondary text-xs px-3 py-2 gap-1.5 flex-shrink-0 disabled:opacity-40"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${syncing === p.key.replace('Id', '') ? 'animate-spin' : ''}`} />
+                          Sync
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-gray-500 uppercase tracking-[0.2em]">Saved only</span>
+                      )}
                     </div>
                   ))}
                   <button onClick={() => save({})} className="btn btn-primary text-sm gap-2">

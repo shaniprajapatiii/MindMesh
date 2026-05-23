@@ -119,7 +119,7 @@ export default function ProfilePage() {
     // Footer
     ctx.fillStyle = '#374151';
     ctx.font = '14px system-ui';
-    ctx.fillText('DSATracker.dev', 40, 370);
+    ctx.fillText('MindMesh', 40, 370);
 
     const link = document.createElement('a');
     link.download = 'profile-card.png';

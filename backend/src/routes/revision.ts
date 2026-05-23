@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { listRevisionQueue } from '../services/revision';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 
 const router = Router();
 
@@ -18,9 +18,9 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.post('/:id/done', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id;
-    const item = await prisma.revisionQueue.findFirst({ where: { id, userId: req.user!.id } });
+    const item = await mongoDb.revisionQueue.findFirst({ where: { id, userId: req.user!.id } });
     if (!item) return res.status(404).json({ message: 'Item not found' });
-    await prisma.revisionQueue.delete({ where: { id: item.id } });
+    await mongoDb.revisionQueue.delete({ where: { id: item.id } });
     res.json({ success: true });
   } catch (e) {
     console.error('Failed to mark revision done', e);

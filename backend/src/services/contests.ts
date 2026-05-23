@@ -1,4 +1,4 @@
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { sendContestReminderEmail } from './email';
 
 export type ContestFeedItem = {
@@ -103,11 +103,11 @@ export async function queueContestRemindersForUser(
     if (!stage) continue;
 
     const dedupeKey = `${contest.id}:${stage}`;
-    const existing = await prisma.contestReminder.findFirst({ where: { userId: user.id, dedupeKey } });
+    const existing = await mongoDb.contestReminder.findFirst({ where: { userId: user.id, dedupeKey } });
     if (existing) continue;
 
     const reminder = buildContestReminder(contest, stage);
-    const record = await prisma.contestReminder.create({
+    const record = await mongoDb.contestReminder.create({
       data: {
         userId: user.id,
         dedupeKey,

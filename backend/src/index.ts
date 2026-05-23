@@ -28,7 +28,7 @@ import notificationsRouter from './routes/notifications';
 import adminRouter from './routes/admin';
 import revisionRouter from './routes/revision';
 import { authLimiter, aiLimiter, syncLimiter } from './middleware/rateLimiter';
-import { connectMongo, prisma } from './lib/db';
+import { connectMongo, mongoDb } from './lib/db';
 import { fetchUpcomingContests, queueContestRemindersForUser } from './services/contests';
 
 const app = express();
@@ -76,17 +76,17 @@ cron.schedule('0 0 * * *', async () => {
   const y = new Date(); y.setDate(y.getDate()-1);
   const yStr = y.toISOString().split('T')[0];
   const tStr = new Date().toISOString().split('T')[0];
-  const users = await prisma.user.findMany({ where: { streak: { gt: 0 } }, select: { id: true, lastActiveDate: true } });
+  const users = await mongoDb.user.findMany({ where: { streak: { gt: 0 } }, select: { id: true, lastActiveDate: true } });
   for (const u of users) {
     if (!u) continue;
     const last = u.lastActiveDate?.toISOString().split('T')[0];
-    if (last !== yStr && last !== tStr) await prisma.user.update({ where: { id: u.id }, data: { streak: 0 } });
+    if (last !== yStr && last !== tStr) await mongoDb.user.update({ where: { id: u.id }, data: { streak: 0 } });
   }
 });
 
 cron.schedule('*/15 * * * *', async () => {
   const contests = await fetchUpcomingContests();
-  const users = await prisma.user.findMany({
+  const users = await mongoDb.user.findMany({
     where: { notifContest: true },
     select: { id: true, name: true, email: true, notifContest: true, notifEmail: true },
   });
@@ -98,7 +98,7 @@ cron.schedule('*/15 * * * *', async () => {
 
 cron.schedule('0 4 * * *', async () => {
   try {
-    const users = await prisma.user.findMany({ where: { notifRevision: true }, select: { id: true } });
+    const users = await mongoDb.user.findMany({ where: { notifRevision: true }, select: { id: true } });
     for (const u of users) {
       await (await import('./services/revision')).queueRevisionForUser(u.id as string);
     }
@@ -124,5 +124,5 @@ start().catch(err => {
   process.exit(1);
 });
 
-process.on('SIGTERM', async () => { await prisma.$disconnect(); process.exit(0); });
+process.on('SIGTERM', async () => { await mongoDb.$disconnect(); process.exit(0); });
 export default app;

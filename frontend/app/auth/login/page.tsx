@@ -70,11 +70,12 @@ export default function LoginPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold text-lg text-white">DSATracker</span>
+            <span className="font-display font-bold text-lg text-white">MindMesh</span>
           </div>
 
           <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
-          <p className="text-gray-400 text-sm mb-8">Sign in to continue your DSA journey</p>
+          <p className="text-gray-400 text-sm mb-2">Sign in to continue your DSA journey</p>
+          <p className="text-xs text-indigo-200/90 mb-8">No platform sync required to get started — you can connect later.</p>
 
           {step === 'login' ? (
             <>

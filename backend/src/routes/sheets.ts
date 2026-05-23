@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/', async (_: Request, res: Response) => {
   try {
-    const sheets = await prisma.dSASheet.findMany({
+    const sheets = await mongoDb.dSASheet.findMany({
       where: { isPublic: true },
       include: { _count: { select: { items: true } } },
     });
@@ -16,7 +16,7 @@ router.get('/', async (_: Request, res: Response) => {
 
 router.get('/progress', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const progress = await prisma.sheetProgress.groupBy({
+    const progress = await mongoDb.sheetProgress.groupBy({
       by: ['sheetId'],
       where: { userId: req.user!.id, solved: true },
       _count: true,
@@ -27,7 +27,7 @@ router.get('/progress', authenticate, async (req: AuthRequest, res: Response) =>
 
 router.get('/:id/problems', optionalAuth as any, async (req: AuthRequest, res: Response) => {
   try {
-    const items = await prisma.sheetItem.findMany({
+    const items = await mongoDb.sheetItem.findMany({
       where: { sheetId: req.params.id },
       include: { problem: true },
       orderBy: { order: 'asc' },
@@ -39,7 +39,7 @@ router.get('/:id/problems', optionalAuth as any, async (req: AuthRequest, res: R
     }));
 
     if (req.user) {
-      const progress = await prisma.sheetProgress.findMany({
+      const progress = await mongoDb.sheetProgress.findMany({
         where: { userId: req.user.id, sheetId: req.params.id },
       });
       const solvedSet = new Set(progress.filter(p => p.solved).map(p => p.problemId));
@@ -53,10 +53,10 @@ router.get('/:id/problems', optionalAuth as any, async (req: AuthRequest, res: R
 router.post('/toggle', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { problemId, sheetId } = req.body;
-    const existing = await prisma.sheetProgress.findUnique({
+    const existing = await mongoDb.sheetProgress.findUnique({
       where: { userId_sheetId_problemId: { userId: req.user!.id, sheetId, problemId } },
     });
-    const record = await prisma.sheetProgress.upsert({
+    const record = await mongoDb.sheetProgress.upsert({
       where: { userId_sheetId_problemId: { userId: req.user!.id, sheetId, problemId } },
       update: { solved: !existing?.solved, solvedAt: !existing?.solved ? new Date() : null },
       create: { userId: req.user!.id, sheetId, problemId, solved: true, solvedAt: new Date() },
@@ -69,7 +69,7 @@ router.post('/toggle', authenticate, async (req: AuthRequest, res: Response) => 
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { name, description, emoji, isPublic = false } = req.body;
-    const sheet = await prisma.dSASheet.create({
+    const sheet = await mongoDb.dSASheet.create({
       data: { name, description, emoji, isPublic, author: 'Custom', createdBy: req.user!.id },
     });
     res.status(201).json(sheet);

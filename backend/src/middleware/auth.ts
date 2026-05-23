@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 
 export interface AuthRequest extends Request {
   user?: { id: string; email: string; role: string };
@@ -12,7 +12,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     if (!token) return res.status(401).json({ message: 'No token provided' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; email: string; role: string };
-    const user = await prisma.user.findUnique({ where: { id: decoded.id }, select: { id: true, email: true, role: true } });
+    const user = await mongoDb.user.findUnique({ where: { id: decoded.id }, select: { id: true, email: true, role: true } });
     if (!user) return res.status(401).json({ message: 'User not found' });
 
     req.user = { id: user.id, email: user.email, role: user.role };

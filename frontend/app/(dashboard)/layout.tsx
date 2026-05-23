@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <AnimatePresence>
             {sidebarOpen && (
               <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="font-display font-bold text-white whitespace-nowrap">
-                DSATracker
+                MindMesh
               </motion.span>
             )}
           </AnimatePresence>
@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
                     <Zap className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-display font-bold text-white">DSATracker</span>
+                  <span className="font-display font-bold text-white">MindMesh</span>
                 </div>
                 <button onClick={() => setMobileSidebarOpen(false)} className="text-gray-400">
                   <X className="w-5 h-5" />

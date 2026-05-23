@@ -17,11 +17,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'DSA Tracker — Master Competitive Programming',
-  description: 'The ultimate DSA platform — track LeetCode, Codeforces, CodeChef, GFG, AI-powered notes, code editor, canvas visualizer and more.',
-  keywords: ['DSA', 'LeetCode', 'Codeforces', 'competitive programming', 'algorithm tracker', 'code editor'],
+  title: 'MindMesh — AI-powered DSA cockpit',
+  description: 'MindMesh is the AI-powered DSA cockpit for tracking LeetCode, Codeforces, CodeChef, GFG progress, notes, editor, dry-runs, and analytics.',
+  keywords: ['MindMesh', 'DSA', 'LeetCode', 'Codeforces', 'competitive programming', 'algorithm tracker', 'code editor'],
   openGraph: {
-    title: 'DSA Tracker',
+    title: 'MindMesh — AI-powered DSA cockpit',
     description: 'Your AI-powered competitive programming hub',
     type: 'website',
   },

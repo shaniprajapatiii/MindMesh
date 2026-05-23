@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { generateToken } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 
@@ -35,18 +35,18 @@ router.post('/google', async (req: Request, res: Response) => {
     if (!googleEmail) return res.status(400).json({ message: 'Email required' });
 
     // Find or create user
-    let user = await prisma.user.findUnique({ where: { email: googleEmail } });
+    let user = await mongoDb.user.findUnique({ where: { email: googleEmail } });
 
     if (!user) {
       // Generate unique username from email
       const baseUsername = googleEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
       let username = baseUsername;
       let counter = 1;
-      while (await prisma.user.findUnique({ where: { username } })) {
+      while (await mongoDb.user.findUnique({ where: { username } })) {
         username = `${baseUsername}${counter++}`;
       }
 
-      user = await prisma.user.create({
+      user = await mongoDb.user.create({
         data: {
           name: googleName || googleEmail.split('@')[0],
           email: googleEmail,
@@ -69,11 +69,11 @@ router.post('/google', async (req: Request, res: Response) => {
 router.post('/forgot-password', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await mongoDb.user.findUnique({ where: { email } });
     // Always return success to prevent email enumeration
     if (user) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      await prisma.otpCode.create({ data: { email, code: otp, expiresAt: new Date(Date.now() + 15 * 60 * 1000) } });
+      await mongoDb.otpCode.create({ data: { email, code: otp, expiresAt: new Date(Date.now() + 15 * 60 * 1000) } });
       // Send email in production
     }
     res.json({ message: 'If the email exists, a reset code has been sent.' });
@@ -86,7 +86,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 router.post('/reset-password', async (req: Request, res: Response) => {
   try {
     const { email, otp, newPassword } = req.body;
-    const record = await prisma.otpCode.findFirst({
+    const record = await mongoDb.otpCode.findFirst({
       where: { email, code: otp, used: false, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'desc' },
     });
@@ -94,8 +94,8 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     await Promise.all([
-      prisma.user.update({ where: { email }, data: { password: hashedPassword } }),
-      prisma.otpCode.update({ where: { id: record.id }, data: { used: true } }),
+      mongoDb.user.update({ where: { email }, data: { password: hashedPassword } }),
+      mongoDb.otpCode.update({ where: { id: record.id }, data: { used: true } }),
     ]);
     res.json({ message: 'Password reset successfully' });
   } catch {

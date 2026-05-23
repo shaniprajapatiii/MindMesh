@@ -67,7 +67,7 @@ export default function PublicProfilePage() {
 
       {/* Nav */}
       <nav className="border-b border-white/5 px-6 h-14 flex items-center justify-between relative z-10">
-        <Link href="/" className="font-display font-bold text-white text-lg">DSATracker</Link>
+        <Link href="/" className="font-display font-bold text-white text-lg">MindMesh</Link>
         <div className="flex gap-2">
           <Link href="/auth/login" className="btn btn-ghost text-sm px-3 py-1.5">Sign in</Link>
           <Link href="/auth/register" className="btn btn-primary text-sm px-3 py-1.5">Join Free</Link>
@@ -175,7 +175,7 @@ export default function PublicProfilePage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card rounded-2xl p-6 text-center border border-indigo-500/20 bg-indigo-500/5">
           <p className="text-gray-400 text-sm mb-4">Want to track your own DSA progress?</p>
           <Link href="/auth/register">
-            <button className="btn btn-primary px-8 py-2.5">Join DSATracker Free →</button>
+            <button className="btn btn-primary px-8 py-2.5">Join MindMesh Free →</button>
           </Link>
         </motion.div>
       </div>

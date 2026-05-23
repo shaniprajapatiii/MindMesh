@@ -1,16 +1,16 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/stats', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await mongoDb.user.findUnique({
       where: { id: req.user!.id },
       select: { streak: true, maxStreak: true, cfRating: true, leetcodeSolved: true, leetcodeEasy: true, leetcodeMedium: true, leetcodeHard: true, codechefRating: true, gfgSolved: true, xp: true, level: true },
     });
-    const totalSolved = await prisma.userProblemStatus.count({ where: { userId: req.user!.id, status: 'solved' } });
+    const totalSolved = await mongoDb.userProblemStatus.count({ where: { userId: req.user!.id, status: 'solved' } });
     res.json({
       ...user, totalSolved,
       leetcode: { solved: user?.leetcodeSolved || 0, easy: user?.leetcodeEasy || 0, medium: user?.leetcodeMedium || 0, hard: user?.leetcodeHard || 0 },
@@ -23,7 +23,7 @@ router.get('/stats', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.get('/activity', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const logs = await prisma.activityLog.findMany({ where: { userId: req.user!.id }, select: { dateStr: true, count: true } });
+    const logs = await mongoDb.activityLog.findMany({ where: { userId: req.user!.id }, select: { dateStr: true, count: true } });
     const map: Record<string, number> = {};
     logs.forEach(l => { map[l.dateStr] = l.count; });
     res.json(map);
@@ -32,7 +32,7 @@ router.get('/activity', authenticate, async (req: AuthRequest, res: Response) =>
 
 router.get('/recent-problems', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const statuses = await prisma.userProblemStatus.findMany({
+    const statuses = await mongoDb.userProblemStatus.findMany({
       where: { userId: req.user!.id },
       include: { problem: { select: { title: true, difficulty: true, platform: true } } },
       orderBy: { solvedAt: 'desc' },

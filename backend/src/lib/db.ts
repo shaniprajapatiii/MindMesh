@@ -118,30 +118,30 @@ function matchScalar(value: any, condition: any): boolean {
 }
 
 async function getRelatedDoc(modelName: string, doc: any, relationKey: string) {
-  if (relationKey === 'problem' && doc.problemId) return prisma.problem.findUnique({ where: { id: doc.problemId } });
-  if (relationKey === 'user' && doc.userId) return prisma.user.findUnique({ where: { id: doc.userId } });
-  if (relationKey === 'note' && doc.noteId) return prisma.note.findUnique({ where: { id: doc.noteId } });
-  if (relationKey === 'sheet' && doc.sheetId) return prisma.dSASheet.findUnique({ where: { id: doc.sheetId } });
-  if (relationKey === 'post' && doc.postId) return prisma.communityPost.findUnique({ where: { id: doc.postId } });
-  if (relationKey === 'group' && doc.groupId) return prisma.studyGroup.findUnique({ where: { id: doc.groupId } });
-  if (modelName === 'User' && relationKey === 'badges') return prisma.userBadge.findMany({ where: { userId: doc.id } });
-  if (modelName === 'Note' && relationKey === 'tags') return prisma.noteTag.findMany({ where: { noteId: doc.id } });
+  if (relationKey === 'problem' && doc.problemId) return mongoDb.problem.findUnique({ where: { id: doc.problemId } });
+  if (relationKey === 'user' && doc.userId) return mongoDb.user.findUnique({ where: { id: doc.userId } });
+  if (relationKey === 'note' && doc.noteId) return mongoDb.note.findUnique({ where: { id: doc.noteId } });
+  if (relationKey === 'sheet' && doc.sheetId) return mongoDb.dSASheet.findUnique({ where: { id: doc.sheetId } });
+  if (relationKey === 'post' && doc.postId) return mongoDb.communityPost.findUnique({ where: { id: doc.postId } });
+  if (relationKey === 'group' && doc.groupId) return mongoDb.studyGroup.findUnique({ where: { id: doc.groupId } });
+  if (modelName === 'User' && relationKey === 'badges') return mongoDb.userBadge.findMany({ where: { userId: doc.id } });
+  if (modelName === 'Note' && relationKey === 'tags') return mongoDb.noteTag.findMany({ where: { noteId: doc.id } });
   if (modelName === 'CommunityPost' && relationKey === '_count') {
     return {
-      likes: await prisma.postLike.count({ where: { postId: doc.id } }),
-      replies: await prisma.postReply.count({ where: { postId: doc.id } }),
+      likes: await mongoDb.postLike.count({ where: { postId: doc.id } }),
+      replies: await mongoDb.postReply.count({ where: { postId: doc.id } }),
     };
   }
   if (modelName === 'StudyGroup' && relationKey === '_count') {
-    return { members: await prisma.groupMember.count({ where: { groupId: doc.id } }) };
+    return { members: await mongoDb.groupMember.count({ where: { groupId: doc.id } }) };
   }
-  if (modelName === 'User' && relationKey === 'contestReminders') return prisma.contestReminder.findMany({ where: { userId: doc.id } });
+  if (modelName === 'User' && relationKey === 'contestReminders') return mongoDb.contestReminder.findMany({ where: { userId: doc.id } });
   if (modelName === 'DSASheet' && relationKey === '_count') {
-    return { items: await prisma.sheetItem.count({ where: { sheetId: doc.id } }) };
+    return { items: await mongoDb.sheetItem.count({ where: { sheetId: doc.id } }) };
   }
-  if (modelName === 'Submission' && relationKey === 'problem' && doc.problemId) return prisma.problem.findUnique({ where: { id: doc.problemId } });
-  if (modelName === 'SheetItem' && relationKey === 'problem' && doc.problemId) return prisma.problem.findUnique({ where: { id: doc.problemId } });
-  if (modelName === 'UserProblemStatus' && relationKey === 'problem' && doc.problemId) return prisma.problem.findUnique({ where: { id: doc.problemId } });
+  if (modelName === 'Submission' && relationKey === 'problem' && doc.problemId) return mongoDb.problem.findUnique({ where: { id: doc.problemId } });
+  if (modelName === 'SheetItem' && relationKey === 'problem' && doc.problemId) return mongoDb.problem.findUnique({ where: { id: doc.problemId } });
+  if (modelName === 'UserProblemStatus' && relationKey === 'problem' && doc.problemId) return mongoDb.problem.findUnique({ where: { id: doc.problemId } });
   return undefined;
 }
 
@@ -300,14 +300,14 @@ async function create(modelName: string, params: any = {}) {
 
   if (modelName === 'Note' && Array.isArray(data.tags?.create)) {
     for (const tag of data.tags.create) {
-      await prisma.noteTag.create({ data: { noteId: plain.id, tag: tag.tag } });
+      await mongoDb.noteTag.create({ data: { noteId: plain.id, tag: tag.tag } });
     }
   }
 
   if (modelName === 'StudyGroup' && data.members?.create) {
     const members = Array.isArray(data.members.create) ? data.members.create : [data.members.create];
     for (const item of members) {
-      await prisma.groupMember.create({ data: { groupId: plain.id, userId: item.userId, role: item.role || 'member' } });
+      await mongoDb.groupMember.create({ data: { groupId: plain.id, userId: item.userId, role: item.role || 'member' } });
     }
   }
 
@@ -321,7 +321,7 @@ async function update(modelName: string, params: any = {}) {
 
   const data = clone(params.data || {});
   if (modelName === 'Note' && data.tags?.create) {
-    await prisma.noteTag.deleteMany({ where: { noteId: doc.id } });
+    await mongoDb.noteTag.deleteMany({ where: { noteId: doc.id } });
   }
   const merged = mergeData(doc, data);
   delete merged.tags;
@@ -330,7 +330,7 @@ async function update(modelName: string, params: any = {}) {
 
   if (modelName === 'Note' && Array.isArray(data.tags?.create)) {
     for (const tag of data.tags.create) {
-      await prisma.noteTag.create({ data: { noteId: doc.id, tag: tag.tag } });
+      await mongoDb.noteTag.create({ data: { noteId: doc.id, tag: tag.tag } });
     }
   }
 
@@ -356,24 +356,24 @@ async function deleteOne(modelName: string, params: any = {}) {
 
   if (modelName === 'User') {
     await Promise.all([
-      prisma.note.deleteMany({ where: { userId: doc.id } }),
-      prisma.submission.deleteMany({ where: { userId: doc.id } }),
-      prisma.sheetProgress.deleteMany({ where: { userId: doc.id } }),
-      prisma.userProblemStatus.deleteMany({ where: { userId: doc.id } }),
-      prisma.userBadge.deleteMany({ where: { userId: doc.id } }),
-      prisma.communityPost.deleteMany({ where: { userId: doc.id } }),
-      prisma.postLike.deleteMany({ where: { userId: doc.id } }),
-      prisma.groupMember.deleteMany({ where: { userId: doc.id } }),
-      prisma.contestReminder.deleteMany({ where: { userId: doc.id } }),
-      prisma.activityLog.deleteMany({ where: { userId: doc.id } }),
-      prisma.otpCode.deleteMany({ where: { userId: doc.id } }),
-      prisma.problemBookmark.deleteMany({ where: { userId: doc.id } }),
-      prisma.revisionQueue.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.note.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.submission.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.sheetProgress.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.userProblemStatus.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.userBadge.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.communityPost.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.postLike.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.groupMember.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.contestReminder.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.activityLog.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.otpCode.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.problemBookmark.deleteMany({ where: { userId: doc.id } }),
+      mongoDb.revisionQueue.deleteMany({ where: { userId: doc.id } }),
     ]);
   }
 
   if (modelName === 'Note') {
-    await prisma.noteTag.deleteMany({ where: { noteId: doc.id } });
+    await mongoDb.noteTag.deleteMany({ where: { noteId: doc.id } });
   }
 
   await collection.deleteOne({ id: doc.id });
@@ -433,7 +433,7 @@ function modelApi(modelName: string) {
   };
 }
 
-export const prisma = {
+export const mongoDb = {
   user: modelApi('User'),
   otpCode: modelApi('OtpCode'),
   problem: modelApi('Problem'),

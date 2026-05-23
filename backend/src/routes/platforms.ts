@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import axios from 'axios';
 import { fetchUpcomingContests } from '../services/contests';
 
@@ -10,7 +10,7 @@ const router = Router();
 router.post('/sync/:platform', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { platform } = req.params;
-    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    const user = await mongoDb.user.findUnique({ where: { id: req.user!.id } });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     let result: any = {};
@@ -72,7 +72,7 @@ async function syncLeetCode(username: string, userId: string) {
     const medium = stats.find((s: any) => s.difficulty === 'Medium')?.count || 0;
     const hard = stats.find((s: any) => s.difficulty === 'Hard')?.count || 0;
 
-    await prisma.user.update({
+    await mongoDb.user.update({
       where: { id: userId },
       data: { leetcodeSolved: all, leetcodeEasy: easy, leetcodeMedium: medium, leetcodeHard: hard },
     });
@@ -104,7 +104,7 @@ async function syncCodeforces(handle: string, userId: string) {
       if (s.verdict === 'OK') solved.add(`${s.problem.contestId}-${s.problem.index}`);
     });
 
-    await prisma.user.update({
+    await mongoDb.user.update({
       where: { id: userId },
       data: { cfRating: rating, cfMaxRating: maxRating, cfRank: rank },
     });
@@ -129,7 +129,7 @@ async function syncCodeChef(username: string, userId: string) {
     const starsMatch = data.match(/(\d+)\s*★/);
     const stars = starsMatch ? parseInt(starsMatch[1]) : 0;
 
-    await prisma.user.update({ where: { id: userId }, data: { codechefRating: rating, codechefStars: stars } });
+    await mongoDb.user.update({ where: { id: userId }, data: { codechefRating: rating, codechefStars: stars } });
     return { rating, stars, platform: 'CodeChef' };
   } catch {
     throw new Error('Failed to sync CodeChef. Profile may be private.');
@@ -149,7 +149,7 @@ async function syncGFG(username: string, userId: string) {
     const score = scoreMatch ? parseInt(scoreMatch[1].replace(/,/g, '')) : 0;
     const solved = solvedMatch ? parseInt(solvedMatch[1]) : 0;
 
-    await prisma.user.update({ where: { id: userId }, data: { gfgScore: score, gfgSolved: solved } });
+    await mongoDb.user.update({ where: { id: userId }, data: { gfgScore: score, gfgSolved: solved } });
     return { score, solved, platform: 'GFG' };
   } catch {
     throw new Error('Failed to sync GFG. Check your username.');

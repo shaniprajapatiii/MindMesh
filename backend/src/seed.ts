@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { connectMongo, prisma } from './lib/db';
+import { connectMongo, mongoDb } from './lib/db';
 
 const PROBLEMS = [
   // Arrays
@@ -89,31 +89,31 @@ async function seed() {
   console.log('🌱 Starting database seed...');
 
   // Clear existing data
-  await prisma.noteTag.deleteMany({});
-  await prisma.note.deleteMany({});
-  await prisma.submission.deleteMany({});
-  await prisma.userProblemStatus.deleteMany({});
-  await prisma.problemBookmark.deleteMany({});
-  await prisma.sheetProgress.deleteMany({});
-  await prisma.activityLog.deleteMany({});
-  await prisma.revisionQueue.deleteMany({});
-  await prisma.userBadge.deleteMany({});
-  await prisma.communityPost.deleteMany({});
-  await prisma.postLike.deleteMany({});
-  await prisma.postReply.deleteMany({});
-  await prisma.groupMember.deleteMany({});
-  await prisma.studyGroup.deleteMany({});
-  await prisma.contestReminder.deleteMany({});
-  await prisma.sheetItem.deleteMany();
-  await prisma.dSASheet.deleteMany();
-  await prisma.problem.deleteMany();
+  await mongoDb.noteTag.deleteMany({});
+  await mongoDb.note.deleteMany({});
+  await mongoDb.submission.deleteMany({});
+  await mongoDb.userProblemStatus.deleteMany({});
+  await mongoDb.problemBookmark.deleteMany({});
+  await mongoDb.sheetProgress.deleteMany({});
+  await mongoDb.activityLog.deleteMany({});
+  await mongoDb.revisionQueue.deleteMany({});
+  await mongoDb.userBadge.deleteMany({});
+  await mongoDb.communityPost.deleteMany({});
+  await mongoDb.postLike.deleteMany({});
+  await mongoDb.postReply.deleteMany({});
+  await mongoDb.groupMember.deleteMany({});
+  await mongoDb.studyGroup.deleteMany({});
+  await mongoDb.contestReminder.deleteMany({});
+  await mongoDb.sheetItem.deleteMany();
+  await mongoDb.dSASheet.deleteMany();
+  await mongoDb.problem.deleteMany();
   console.log('✓ Cleared existing data');
 
   // Seed problems
   const createdProblems = [];
   for (const problem of PROBLEMS) {
     try {
-      const p = await prisma.problem.create({ data: problem as any });
+      const p = await mongoDb.problem.create({ data: problem as any });
       createdProblems.push(p);
     } catch (e) { /* skip duplicates */ }
   }
@@ -122,43 +122,50 @@ async function seed() {
   // Seed sheets
   for (const sheet of SHEETS) {
     try {
-      await prisma.dSASheet.create({ data: sheet });
+      await mongoDb.dSASheet.create({ data: sheet });
     } catch {}
   }
   console.log(`✓ Seeded ${SHEETS.length} DSA sheets`);
 
   // Link problems to sheets (Blind 75 - all leetcode problems)
   const lcProblems = createdProblems.filter(p => p.platform === 'LeetCode');
-  const blind75Sheet = await prisma.dSASheet.findUnique({ where: { id: 'blind-75' } });
+  const blind75Sheet = await mongoDb.dSASheet.findUnique({ where: { id: 'blind-75' } });
   if (blind75Sheet) {
     for (let i = 0; i < Math.min(lcProblems.length, 50); i++) {
       try {
-        await prisma.sheetItem.create({ data: { sheetId: blind75Sheet.id, problemId: lcProblems[i].id, order: i + 1, topic: lcProblems[i].topic } });
+        await mongoDb.sheetItem.create({ data: { sheetId: blind75Sheet.id, problemId: lcProblems[i].id, order: i + 1, topic: lcProblems[i].topic } });
       } catch {}
     }
     console.log('✓ Linked problems to Blind 75 sheet');
   }
 
-  // Create demo user
-  const existingDemo = await prisma.user.findUnique({ where: { email: 'demo@dsatracker.dev' } });
-  if (!existingDemo) {
-    const hashedPassword = await bcrypt.hash('demo123456', 12);
-    await prisma.user.create({
-      data: {
-        name: 'Demo User', email: 'demo@dsatracker.dev', username: 'demouser',
-        password: hashedPassword, isEmailVerified: true,
-        leetcodeId: 'neal_wu', codeforcesId: 'tourist',
-        bio: 'Competitive programmer aiming for FAANG!',
-        streak: 15, maxStreak: 47, xp: 2500, level: 5,
-        leetcodeSolved: 234, leetcodeEasy: 89, leetcodeMedium: 115, leetcodeHard: 30,
-        cfRating: 1842, cfRank: 'Expert',
-        college: 'IIT Delhi',
-      },
-    });
-    console.log('✓ Created demo user (email: demo@dsatracker.dev, password: demo123456)');
+  // Optional demo user for local demos only
+  const createDemoUser = process.env.SEED_DEMO_USER === 'true';
+  if (createDemoUser) {
+    const existingDemo = await mongoDb.user.findUnique({ where: { email: 'demo@dsatracker.dev' } });
+    if (!existingDemo) {
+      const hashedPassword = await bcrypt.hash('demo123456', 12);
+      await mongoDb.user.create({
+        data: {
+          name: 'Demo User', email: 'demo@dsatracker.dev', username: 'demouser',
+          password: hashedPassword, isEmailVerified: true,
+          leetcodeId: 'neal_wu', codeforcesId: 'tourist',
+          bio: 'Competitive programmer aiming for FAANG!',
+          streak: 15, maxStreak: 47, xp: 2500, level: 5,
+          leetcodeSolved: 234, leetcodeEasy: 89, leetcodeMedium: 115, leetcodeHard: 30,
+          cfRating: 1842, cfRank: 'Expert',
+          college: 'IIT Delhi',
+        },
+      });
+      console.log('✓ Created demo user (email: demo@dsatracker.dev, password: demo123456)');
+    } else {
+      console.log('✓ Demo user already exists');
+    }
+  } else {
+    console.log('ℹ️ Demo user creation skipped. Set SEED_DEMO_USER=true to create a demo account.');
   }
 
   console.log('🌱 Seed completed successfully!');
 }
 
-seed().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+seed().catch(e => { console.error(e); process.exit(1); }).finally(() => mongoDb.$disconnect());

@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { queueContestRemindersForUser } from '../services/contests';
 
 const router = Router();
@@ -23,36 +23,36 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const [submissions, notes, badges, activities, profile] = await Promise.all([
-      prisma.submission.findMany({
+      mongoDb.submission.findMany({
         where: { userId },
         include: { problem: { select: { title: true, platform: true } } },
         orderBy: { createdAt: 'desc' },
         take: 4,
       }),
-      prisma.note.findMany({
+      mongoDb.note.findMany({
         where: { userId },
         select: { id: true, title: true, problemTitle: true, mode: true, updatedAt: true, createdAt: true },
         orderBy: { updatedAt: 'desc' },
         take: 3,
       }),
-      prisma.userBadge.findMany({
+      mongoDb.userBadge.findMany({
         where: { userId },
         select: { id: true, badgeId: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 3,
       }),
-      prisma.activityLog.findMany({
+      mongoDb.activityLog.findMany({
         where: { userId },
         select: { dateStr: true, count: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 3,
       }),
-      prisma.user.findUnique({
+      mongoDb.user.findUnique({
         where: { id: userId },
         select: { streak: true, maxStreak: true, xp: true, level: true },
       }),
     ]);
-    const user = await prisma.user.findUnique({
+    const user = await mongoDb.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, notifContest: true, notifEmail: true },
     });
@@ -65,7 +65,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       );
     }
 
-    const contestReminders = await prisma.contestReminder.findMany({
+    const contestReminders = await mongoDb.contestReminder.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -138,7 +138,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.post('/read-all', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    await prisma.contestReminder.updateMany({ where: { userId: req.user!.id }, data: { read: true } });
+    await mongoDb.contestReminder.updateMany({ where: { userId: req.user!.id }, data: { read: true } });
     res.json({ success: true });
   } catch {
     res.status(500).json({ success: false });
@@ -147,9 +147,9 @@ router.post('/read-all', authenticate, async (req: AuthRequest, res: Response) =
 
 router.post('/:id/read', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const reminder = await prisma.contestReminder.findFirst({ where: { id: req.params.id, userId: req.user!.id } });
+    const reminder = await mongoDb.contestReminder.findFirst({ where: { id: req.params.id, userId: req.user!.id } });
     if (!reminder) return res.status(404).json({ message: 'Reminder not found' });
-    await prisma.contestReminder.update({ where: { id: reminder.id }, data: { read: true } });
+    await mongoDb.contestReminder.update({ where: { id: reminder.id }, data: { read: true } });
     res.json({ success: true });
   } catch {
     res.status(500).json({ success: false });

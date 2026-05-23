@@ -1,8 +1,8 @@
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 
 export async function computeWeakTopics(userId: string, maxTopics = 5) {
-  const submissions = await prisma.submission.findMany({ where: { userId }, include: { problem: { select: { topic: true, id: true } } }, take: 1000 });
-  const statuses = await prisma.userProblemStatus.findMany({ where: { userId }, include: { problem: { select: { topic: true, id: true } } } });
+  const submissions = await mongoDb.submission.findMany({ where: { userId }, include: { problem: { select: { topic: true, id: true } } }, take: 1000 });
+  const statuses = await mongoDb.userProblemStatus.findMany({ where: { userId }, include: { problem: { select: { topic: true, id: true } } } });
 
   const solvedSet = new Set(statuses.filter((s: any) => s.status === 'solved').map((s: any) => s.problemId));
 
@@ -38,19 +38,19 @@ export async function queueRevisionForUser(userId: string, maxPerTopic = 5) {
   const topics = await computeWeakTopics(userId, 5);
   if (!topics || topics.length === 0) return [];
 
-  const statuses = await prisma.userProblemStatus.findMany({ where: { userId } });
+  const statuses = await mongoDb.userProblemStatus.findMany({ where: { userId } });
   const solvedSet = new Set(statuses.filter((s: any) => s.status === 'solved').map((s: any) => s.problemId));
 
   const created: any[] = [];
   for (const topic of topics) {
-    const problems = await prisma.problem.findMany({ where: { topic }, take: 20 });
+    const problems = await mongoDb.problem.findMany({ where: { topic }, take: 20 });
     let added = 0;
     for (const p of problems) {
       if (added >= maxPerTopic) break;
       if (solvedSet.has(p.id)) continue;
-      const exists = await prisma.revisionQueue.findFirst({ where: { userId, problemId: p.id } });
+      const exists = await mongoDb.revisionQueue.findFirst({ where: { userId, problemId: p.id } });
       if (exists) continue;
-      const rec = await prisma.revisionQueue.create({ data: { userId, problemId: p.id, problemTitle: p.title || p.id, topic: p.topic || topic, reason: 'weak-topic', priority: 1, scheduledAt: new Date(), createdAt: new Date(), read: false } });
+      const rec = await mongoDb.revisionQueue.create({ data: { userId, problemId: p.id, problemTitle: p.title || p.id, topic: p.topic || topic, reason: 'weak-topic', priority: 1, scheduledAt: new Date(), createdAt: new Date(), read: false } });
       created.push(rec);
       added += 1;
     }
@@ -59,5 +59,5 @@ export async function queueRevisionForUser(userId: string, maxPerTopic = 5) {
 }
 
 export async function listRevisionQueue(userId: string) {
-  return prisma.revisionQueue.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+  return mongoDb.revisionQueue.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
 }

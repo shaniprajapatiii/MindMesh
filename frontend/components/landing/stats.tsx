@@ -24,7 +24,7 @@ export function StatsSection() {
               className="text-center"
             >
               <div className="text-4xl font-display font-bold gradient-text mb-1">{stat.value}</div>
-              <div className="text-gray-500 text-sm">{stat.label}</div>
+              <div className="text-gray-300 text-sm">{stat.label}</div>
             </motion.div>
           ))}
         </div>
@@ -95,7 +95,7 @@ export function CTASection() {
               <span className="gradient-text">DSA beast?</span>
             </h2>
             <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto">
-              Join thousands of students who cracked FAANG with DSATracker. Start your journey today — completely free.
+              Join thousands of students who cracked FAANG with MindMesh. Start your journey today — completely free.
             </p>
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               {perks.map((perk, i) => (
@@ -124,7 +124,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
-            <div className="text-white font-display font-bold text-lg mb-3">DSATracker</div>
+            <div className="text-white font-display font-bold text-lg mb-3">MindMesh</div>
             <p className="text-gray-500 text-sm leading-relaxed">The ultimate competitive programming companion for students targeting top tech companies.</p>
           </div>
           {[
@@ -143,7 +143,7 @@ export function Footer() {
           ))}
         </div>
         <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-600 text-sm">© 2025 DSATracker. Built with ❤️ for students.</p>
+          <p className="text-gray-600 text-sm">© 2025 MindMesh. Built with ❤️ for students.</p>
           <div className="flex items-center gap-4">
             {['Twitter', 'GitHub', 'Discord', 'LinkedIn'].map((social) => (
               <a key={social} href="#" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">{social}</a>

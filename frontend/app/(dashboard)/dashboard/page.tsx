@@ -58,7 +58,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     totalSolved: 0, streak: 0, rating: 0, rank: '--',
     easy: 0, medium: 0, hard: 0,
-    leetcode: { solved: 0, total: 3372 },
+    leetcode: { solved: 0 },
     codeforces: { rating: 0, maxRating: 0 },
     codechef: { rating: 0, stars: 0 },
     gfg: { solved: 0, score: 0 },
@@ -69,6 +69,9 @@ export default function DashboardPage() {
   const [topicData, setTopicData] = useState<any[]>([]);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const todayKey = new Date().toISOString().split('T')[0];
+  const todaySolved = activityData[todayKey] || 0;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,35 +109,56 @@ export default function DashboardPage() {
   }, []);
 
   const quickStats = [
-    { label: 'Total Solved', value: stats.totalSolved || 0, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', change: '+12 this week' },
-    { label: 'Current Streak', value: `${stats.streak || 0}🔥`, icon: Flame, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', change: 'Keep it up!' },
-    { label: 'CF Rating', value: stats.codeforces?.rating || '--', icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', change: 'Specialist' },
-    { label: 'Problems Today', value: 0, icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', change: 'Goal: 3/day' },
+    { label: 'Total Solved', value: stats.totalSolved || 0, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', change: `${stats.totalSolved || 0} solved so far` },
+    { label: 'Current Streak', value: `${stats.streak || 0}🔥`, icon: Flame, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', change: 'Keep the streak alive!' },
+    { label: 'CF Rating', value: stats.codeforces?.rating || '--', icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', change: 'Synced from Codeforces' },
+    { label: 'Problems Today', value: todaySolved, icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', change: todaySolved > 0 ? `${todaySolved} solved today` : 'Start solving to build momentum' },
   ];
 
   const platforms = [
-    { name: 'LeetCode', solved: stats.leetcode?.solved || 0, total: 3372, color: '#ffa116', icon: '⚡' },
-    { name: 'Codeforces', solved: stats.codeforces?.rating || 0, total: null, label: 'Rating', color: '#1e69d2', icon: '🏆' },
-    { name: 'CodeChef', solved: stats.codechef?.rating || 0, total: null, label: 'Rating', color: '#5b4638', icon: '👨‍🍳' },
-    { name: 'GeeksforGeeks', solved: stats.gfg?.solved || 0, total: null, label: 'Score', color: '#2cae4d', icon: '🧠' },
+    { name: 'LeetCode', value: stats.leetcode?.solved || 0, label: 'Solved', color: '#ffa116', icon: '⚡' },
+    { name: 'Codeforces', value: stats.codeforces?.rating || 0, label: 'Rating', color: '#1e69d2', icon: '🏆' },
+    { name: 'CodeChef', value: stats.codechef?.rating || 0, label: 'Rating', color: '#5b4638', icon: '👨‍🍳' },
+    { name: 'GeeksforGeeks', value: stats.gfg?.solved || 0, label: 'Solved', color: '#2cae4d', icon: '🧠' },
   ];
+
+  const connectedPlatforms = platforms.filter((platform) => Number(platform.value) > 0).length;
+  const focusLabel = topicData[0]?.name || (connectedPlatforms > 0 ? 'Continue building your streak' : 'Start solving to unlock insights');
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Welcome header */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-white mb-1">
-            Welcome back, <span className="gradient-text">{session?.user?.name?.split(' ')[0] || 'Coder'}</span> 👋
-          </h1>
-          <p className="text-gray-500 text-sm">Here's your DSA progress overview</p>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-2xl p-5 border border-indigo-500/10 bg-gradient-to-br from-indigo-500/10 via-transparent to-violet-500/10"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-xs font-semibold mb-3">
+              <Zap className="w-3.5 h-3.5" />
+              MindMesh cockpit
+            </div>
+            <h1 className="text-2xl font-display font-bold text-white mb-1">
+              Welcome back, <span className="gradient-text">{session?.user?.name?.split(' ')[0] || 'Coder'}</span> 👋
+            </h1>
+            <p className="text-gray-400 text-sm max-w-2xl">
+              Your daily study flow is ready. Review progress, jump into the next problem, and keep your competitive programming momentum moving.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Focus</div>
+              <div className="text-sm font-semibold text-white mt-1">{focusLabel}</div>
+            </div>
+            <Link href="/problems">
+              <button className="btn btn-primary text-sm px-4 py-2">
+                <Code2 className="w-4 h-4" />
+                Solve a Problem
+              </button>
+            </Link>
+          </div>
         </div>
-        <Link href="/problems">
-          <button className="btn btn-primary text-sm px-4 py-2">
-            <Code2 className="w-4 h-4" />
-            Solve a Problem
-          </button>
-        </Link>
       </motion.div>
 
       {/* Quick stats */}
@@ -234,16 +258,9 @@ export default function DashboardPage() {
                 <span className="text-sm font-medium text-white">{p.name}</span>
               </div>
               <div className="text-2xl font-bold text-white mb-1" style={{ color: p.color }}>
-                {p.solved || '--'}
+                {p.value || '--'}
               </div>
-              <div className="text-xs text-gray-500">
-                {p.total ? `/ ${p.total} problems` : p.label}
-              </div>
-              {p.total && p.solved ? (
-                <div className="progress-bar mt-3">
-                  <div className="progress-fill" style={{ width: `${Math.min((p.solved / p.total) * 100, 100)}%`, background: p.color }} />
-                </div>
-              ) : null}
+              <div className="text-xs text-gray-500">{p.label}</div>
             </div>
           ))}
         </div>

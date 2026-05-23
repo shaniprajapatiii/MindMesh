@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -22,17 +22,17 @@ router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
     if (sortBy === 'acceptance') orderBy.acceptance = 'desc';
 
     const [problems, total] = await Promise.all([
-      prisma.problem.findMany({ where, skip, take: parseInt(limit), orderBy }),
-      prisma.problem.count({ where }),
+      mongoDb.problem.findMany({ where, skip, take: parseInt(limit), orderBy }),
+      mongoDb.problem.count({ where }),
     ]);
 
     // Attach user status if logged in
     let result = problems as any[];
     if (req.user) {
-      const statuses = await prisma.userProblemStatus.findMany({
+      const statuses = await mongoDb.userProblemStatus.findMany({
         where: { userId: req.user.id, problemId: { in: problems.map(p => p.id) } },
       });
-      const bookmarks = await prisma.problemBookmark.findMany({
+      const bookmarks = await mongoDb.problemBookmark.findMany({
         where: { userId: req.user.id, problemId: { in: problems.map(p => p.id) } },
       });
       const statusMap = Object.fromEntries(statuses.map(s => [s.problemId, s.status]));
@@ -64,14 +64,14 @@ router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
 // GET /api/problems/:id
 router.get('/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const problem = await prisma.problem.findUnique({ where: { id: req.params.id } });
+    const problem = await mongoDb.problem.findUnique({ where: { id: req.params.id } });
     if (!problem) return res.status(404).json({ message: 'Problem not found' });
 
     let result: any = { ...problem };
     if (req.user) {
       const [statusRec, bookmark] = await Promise.all([
-        prisma.userProblemStatus.findUnique({ where: { userId_problemId: { userId: req.user.id, problemId: problem.id } } }),
-        prisma.problemBookmark.findUnique({ where: { userId_problemId: { userId: req.user.id, problemId: problem.id } } }),
+        mongoDb.userProblemStatus.findUnique({ where: { userId_problemId: { userId: req.user.id, problemId: problem.id } } }),
+        mongoDb.problemBookmark.findUnique({ where: { userId_problemId: { userId: req.user.id, problemId: problem.id } } }),
       ]);
       result.userStatus = statusRec?.status || 'unsolved';
       result.bookmarked = !!bookmark;
@@ -86,7 +86,7 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
 router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { status, timeTaken } = req.body;
-    const record = await prisma.userProblemStatus.upsert({
+    const record = await mongoDb.userProblemStatus.upsert({
       where: { userId_problemId: { userId: req.user!.id, problemId: req.params.id } },
       update: { status, ...(status === 'solved' ? { solvedAt: new Date() } : {}), timeTaken },
       create: { userId: req.user!.id, problemId: req.params.id, status, timeTaken, ...(status === 'solved' ? { solvedAt: new Date() } : {}) },
@@ -95,7 +95,7 @@ router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response) 
     // Update activity log if solved
     if (status === 'solved') {
       const today = new Date().toISOString().split('T')[0];
-      await prisma.activityLog.upsert({
+      await mongoDb.activityLog.upsert({
         where: { userId_dateStr: { userId: req.user!.id, dateStr: today } },
         update: { count: { increment: 1 } },
         create: { userId: req.user!.id, dateStr: today, count: 1 },
@@ -103,9 +103,9 @@ router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response) 
       // Update streak
       await updateStreak(req.user!.id);
       // Grant XP
-      const problem = await prisma.problem.findUnique({ where: { id: req.params.id }, select: { difficulty: true } });
+      const problem = await mongoDb.problem.findUnique({ where: { id: req.params.id }, select: { difficulty: true } });
       const xp = problem?.difficulty === 'Easy' ? 10 : problem?.difficulty === 'Medium' ? 25 : 50;
-      await prisma.user.update({ where: { id: req.user!.id }, data: { xp: { increment: xp } } });
+      await mongoDb.user.update({ where: { id: req.user!.id }, data: { xp: { increment: xp } } });
     }
 
     res.json(record);
@@ -117,14 +117,14 @@ router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response) 
 // POST /api/problems/:id/bookmark
 router.post('/:id/bookmark', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const existing = await prisma.problemBookmark.findUnique({
+    const existing = await mongoDb.problemBookmark.findUnique({
       where: { userId_problemId: { userId: req.user!.id, problemId: req.params.id } },
     });
     if (existing) {
-      await prisma.problemBookmark.delete({ where: { id: existing.id } });
+      await mongoDb.problemBookmark.delete({ where: { id: existing.id } });
       res.json({ bookmarked: false });
     } else {
-      await prisma.problemBookmark.create({ data: { userId: req.user!.id, problemId: req.params.id } });
+      await mongoDb.problemBookmark.create({ data: { userId: req.user!.id, problemId: req.params.id } });
       res.json({ bookmarked: true });
     }
   } catch {
@@ -133,7 +133,7 @@ router.post('/:id/bookmark', authenticate, async (req: AuthRequest, res: Respons
 });
 
 async function updateStreak(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { streak: true, maxStreak: true, lastActiveDate: true } });
+  const user = await mongoDb.user.findUnique({ where: { id: userId }, select: { streak: true, maxStreak: true, lastActiveDate: true } });
   if (!user) return;
 
   const today = new Date();
@@ -151,7 +151,7 @@ async function updateStreak(userId: string) {
     newStreak = 1;
   }
 
-  await prisma.user.update({
+  await mongoDb.user.update({
     where: { id: userId },
     data: { streak: newStreak, maxStreak: Math.max(newStreak, user.maxStreak), lastActiveDate: new Date() },
   });

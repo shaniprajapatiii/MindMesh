@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -11,20 +11,20 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const [allSolved, submissions, activity, user] = await Promise.all([
-      prisma.userProblemStatus.findMany({
+      mongoDb.userProblemStatus.findMany({
         where: { userId: req.user!.id, status: 'solved', solvedAt: { gte: since } },
         include: { problem: { select: { topic: true, difficulty: true, platform: true } } },
       }),
-      prisma.submission.findMany({
+      mongoDb.submission.findMany({
         where: { userId: req.user!.id, createdAt: { gte: since } },
         include: { problem: { select: { difficulty: true } } },
         orderBy: { createdAt: 'asc' },
       }),
-      prisma.activityLog.findMany({
+      mongoDb.activityLog.findMany({
         where: { userId: req.user!.id, date: { gte: since } },
         orderBy: { date: 'asc' },
       }),
-      prisma.user.findUnique({
+      mongoDb.user.findUnique({
         where: { id: req.user!.id },
         select: { streak: true, maxStreak: true, xp: true, level: true, leetcodeSolved: true, cfRating: true, codechefRating: true, gfgSolved: true },
       }),

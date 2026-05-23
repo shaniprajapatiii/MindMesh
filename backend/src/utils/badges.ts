@@ -1,25 +1,25 @@
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 
 const BADGE_CHECKS = [
-  { id: 'first_solve', condition: async (uid: string) => await prisma.userProblemStatus.count({ where: { userId: uid, status: 'solved' } }) >= 1 },
-  { id: 'streak_7', condition: async (uid: string) => ((await prisma.user.findUnique({ where: { id: uid }, select: { maxStreak: true } }))?.maxStreak || 0) >= 7 },
-  { id: 'streak_30', condition: async (uid: string) => ((await prisma.user.findUnique({ where: { id: uid }, select: { maxStreak: true } }))?.maxStreak || 0) >= 30 },
-  { id: 'hundred_solved', condition: async (uid: string) => await prisma.userProblemStatus.count({ where: { userId: uid, status: 'solved' } }) >= 100 },
-  { id: 'hard_5', condition: async (uid: string) => await prisma.userProblemStatus.count({ where: { userId: uid, status: 'solved', problem: { difficulty: 'Hard' } } }) >= 5 },
-  { id: 'dp_master', condition: async (uid: string) => await prisma.userProblemStatus.count({ where: { userId: uid, status: 'solved', problem: { topic: 'DP' } } }) >= 20 },
-  { id: 'cf_1200', condition: async (uid: string) => ((await prisma.user.findUnique({ where: { id: uid }, select: { cfRating: true } }))?.cfRating || 0) >= 1200 },
-  { id: 'graph_king', condition: async (uid: string) => await prisma.userProblemStatus.count({ where: { userId: uid, status: 'solved', problem: { topic: 'Graph' } } }) >= 15 },
+  { id: 'first_solve', condition: async (uid: string) => await mongoDb.userProblemStatus.count({ where: { userId: uid, status: 'solved' } }) >= 1 },
+  { id: 'streak_7', condition: async (uid: string) => ((await mongoDb.user.findUnique({ where: { id: uid }, select: { maxStreak: true } }))?.maxStreak || 0) >= 7 },
+  { id: 'streak_30', condition: async (uid: string) => ((await mongoDb.user.findUnique({ where: { id: uid }, select: { maxStreak: true } }))?.maxStreak || 0) >= 30 },
+  { id: 'hundred_solved', condition: async (uid: string) => await mongoDb.userProblemStatus.count({ where: { userId: uid, status: 'solved' } }) >= 100 },
+  { id: 'hard_5', condition: async (uid: string) => await mongoDb.userProblemStatus.count({ where: { userId: uid, status: 'solved', problem: { difficulty: 'Hard' } } }) >= 5 },
+  { id: 'dp_master', condition: async (uid: string) => await mongoDb.userProblemStatus.count({ where: { userId: uid, status: 'solved', problem: { topic: 'DP' } } }) >= 20 },
+  { id: 'cf_1200', condition: async (uid: string) => ((await mongoDb.user.findUnique({ where: { id: uid }, select: { cfRating: true } }))?.cfRating || 0) >= 1200 },
+  { id: 'graph_king', condition: async (uid: string) => await mongoDb.userProblemStatus.count({ where: { userId: uid, status: 'solved', problem: { topic: 'Graph' } } }) >= 15 },
 ];
 
 export async function checkAndGrantBadges(userId: string): Promise<string[]> {
   const newBadges: string[] = [];
-  const existingRows = await prisma.userBadge.findMany({ where: { userId }, select: { badgeId: true } }) || [];
+  const existingRows = await mongoDb.userBadge.findMany({ where: { userId }, select: { badgeId: true } }) || [];
   const existing = new Set(existingRows.map(b => (b && (b as any).badgeId) as string).filter(Boolean));
   for (const badge of BADGE_CHECKS) {
     if (existing.has(badge.id)) continue;
     try {
       if (await badge.condition(userId)) {
-        await prisma.userBadge.create({ data: { userId, badgeId: badge.id } });
+        await mongoDb.userBadge.create({ data: { userId, badgeId: badge.id } });
         newBadges.push(badge.id);
       }
     } catch {}
@@ -44,8 +44,8 @@ export function getXpForAction(action: string, difficulty?: string): number {
 }
 
 export async function grantXp(userId: string, xp: number) {
-  const updated = await prisma.user.update({ where: { id: userId }, data: { xp: { increment: xp } }, select: { xp: true } });
+  const updated = await mongoDb.user.update({ where: { id: userId }, data: { xp: { increment: xp } }, select: { xp: true } });
   if (!updated) throw new Error('User not found');
   const newLevel = calculateLevel((updated as any).xp || 0);
-  await prisma.user.update({ where: { id: userId }, data: { level: newLevel } });
+  await mongoDb.user.update({ where: { id: userId }, data: { level: newLevel } });
 }

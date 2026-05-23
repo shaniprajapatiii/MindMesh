@@ -20,10 +20,10 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-sm"
           >
             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-            AI-Powered DSA Platform
+            MindMesh AI-powered DSA cockpit
             <ArrowRight className="w-3 h-3" />
           </motion.div>
 
@@ -33,30 +33,18 @@ export function HeroSection() {
             transition={{ delay: 0.2 }}
             className="text-5xl lg:text-7xl font-display font-bold leading-tight"
           >
-            Master{' '}
-            <span className="gradient-text">DSA</span>
-            {' '}like a{' '}
-            <span className="relative">
-              <span className="gradient-text">Pro</span>
-              <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none">
-                <path d="M0 6 Q50 0 100 4 Q150 8 200 2" stroke="url(#heroLine)" strokeWidth="2.5" strokeLinecap="round"/>
-                <defs>
-                  <linearGradient id="heroLine" x1="0" y1="0" x2="200" y2="0">
-                    <stop stopColor="#6366f1"/>
-                    <stop offset="1" stopColor="#8b5cf6"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-            </span>
+            Train smarter.
+            <br />
+            <span className="gradient-text">Ship stronger solutions.</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-xl text-gray-400 leading-relaxed max-w-xl"
+            className="text-xl text-gray-300 leading-relaxed max-w-xl"
           >
-            Track your progress across LeetCode, Codeforces, CodeChef & GFG. Get AI-generated notes, visualize data structures on canvas, solve problems in our built-in editor.
+            Track your real progress across LeetCode, Codeforces, CodeChef, and GFG. Study with AI notes, dry-run visualizations, and a premium editor built for serious prep.
           </motion.p>
 
           <motion.div
@@ -67,14 +55,16 @@ export function HeroSection() {
           >
             <Link href="/auth/register">
               <button className="btn btn-primary px-8 py-3.5 text-base shadow-glow hover:shadow-glow-lg transition-all duration-300">
-                Start for Free
+                Start building your streak
                 <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
-            <button className="btn btn-secondary px-8 py-3.5 text-base group">
-              <Play className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-              Watch Demo
-            </button>
+            <Link href="/problems">
+              <button className="btn btn-secondary px-8 py-3.5 text-base group">
+                <Play className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+                Explore problems
+              </button>
+            </Link>
           </motion.div>
 
           <motion.div

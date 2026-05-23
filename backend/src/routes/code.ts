@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 
 const router = Router();
 const JUDGE0_LANGUAGE_IDS: Record<string, number> = {
@@ -152,7 +152,7 @@ router.post('/submit', authenticate, async (req: AuthRequest, res: Response) => 
     const { code, language, problemId } = req.body;
     if (!problemId) return res.status(400).json({ message: 'Problem ID required' });
 
-    const problem = await prisma.problem.findUnique({
+    const problem = await mongoDb.problem.findUnique({
       where: { id: problemId },
       select: { id: true, title: true, examples: true },
     });
@@ -191,7 +191,7 @@ router.post('/submit', authenticate, async (req: AuthRequest, res: Response) => 
     memory = results.length ? Number((results.reduce((sum, item) => sum + (item.memory || 0), 0) / results.length).toFixed(1)) : null;
     submissionStatus = accepted ? 'accepted' : results.some(r => r.status?.toLowerCase().includes('compile')) ? 'compile_error' : 'wrong_answer';
 
-    await prisma.submission.create({
+    await mongoDb.submission.create({
       data: {
         userId: req.user!.id,
         problemId,
@@ -207,20 +207,20 @@ router.post('/submit', authenticate, async (req: AuthRequest, res: Response) => 
 
     if (accepted) {
       // Update problem status
-      await prisma.userProblemStatus.upsert({
+      await mongoDb.userProblemStatus.upsert({
         where: { userId_problemId: { userId: req.user!.id, problemId } },
         update: { status: 'solved', solvedAt: new Date(), attempts: { increment: 1 } },
         create: { userId: req.user!.id, problemId, status: 'solved', solvedAt: new Date(), attempts: 1 },
       });
       // Update activity
       const today = new Date().toISOString().split('T')[0];
-      await prisma.activityLog.upsert({
+      await mongoDb.activityLog.upsert({
         where: { userId_dateStr: { userId: req.user!.id, dateStr: today } },
         update: { count: { increment: 1 } },
         create: { userId: req.user!.id, dateStr: today, count: 1 },
       });
     } else {
-      await prisma.userProblemStatus.upsert({
+      await mongoDb.userProblemStatus.upsert({
         where: { userId_problemId: { userId: req.user!.id, problemId } },
         update: { attempts: { increment: 1 } },
         create: { userId: req.user!.id, problemId, status: 'attempted', attempts: 1 },
@@ -245,7 +245,7 @@ router.post('/submit', authenticate, async (req: AuthRequest, res: Response) => 
 // GET /api/code/submissions/:problemId
 router.get('/submissions/:problemId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const submissions = await prisma.submission.findMany({
+    const submissions = await mongoDb.submission.findMany({
       where: { userId: req.user!.id, problemId: req.params.problemId },
       orderBy: { createdAt: 'desc' },
       take: 20,
@@ -263,7 +263,7 @@ router.get('/submissions', authenticate, async (req: AuthRequest, res: Response)
     if (status) where.status = status;
     if (language) where.language = language;
 
-    const submissions = await prisma.submission.findMany({
+    const submissions = await mongoDb.submission.findMany({
       where,
       include: { problem: { select: { title: true, difficulty: true, platform: true, topic: true } } },
       orderBy: { createdAt: 'desc' },

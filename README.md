@@ -9,7 +9,7 @@ cp frontend/.env.example frontend/.env.local
 docker-compose up -d
 docker exec mindmesh-backend npm run db:seed
 # Open http://localhost:3000
-# Demo: demo@mindmesh.dev / demo123456
+# Optional demo account: set SEED_DEMO_USER=true before running db:seed
 ```
 
 ## Manual Setup

@@ -38,7 +38,7 @@ export function LandingNav() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm group-hover:shadow-glow transition-all duration-300">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-display font-bold text-lg text-white">DSATracker</span>
+          <span className="font-display font-bold text-lg text-white">MindMesh</span>
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">BETA</span>
         </Link>
 
@@ -60,7 +60,7 @@ export function LandingNav() {
           {session ? (
             <Link href="/dashboard">
               <button className="btn btn-primary text-sm px-5 py-2">
-                Dashboard →
+                Open Dashboard
               </button>
             </Link>
           ) : (
@@ -70,7 +70,7 @@ export function LandingNav() {
               </Link>
               <Link href="/auth/register">
                 <button className="btn btn-primary text-sm px-5 py-2">
-                  Get Started Free
+                  Launch your cockpit
                 </button>
               </Link>
             </>

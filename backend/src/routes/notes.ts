@@ -1,12 +1,12 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const notes = await prisma.note.findMany({
+    const notes = await mongoDb.note.findMany({
       where: { userId: req.user!.id },
       include: { tags: true },
       orderBy: [{ pinned: 'desc' }, { updatedAt: 'desc' }],
@@ -18,7 +18,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { title, content, mode = 'simple', pinned = false, tags = [], problemId, problemTitle } = req.body;
-    const note = await prisma.note.create({
+    const note = await mongoDb.note.create({
       data: {
         userId: req.user!.id, title, content, mode, pinned, problemId, problemTitle,
         tags: { create: (tags as string[]).map(t => ({ tag: t })) },
@@ -32,8 +32,8 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { title, content, mode, pinned, tags = [], problemId, problemTitle } = req.body;
-    await prisma.noteTag.deleteMany({ where: { noteId: req.params.id } });
-    const note = await prisma.note.update({
+    await mongoDb.noteTag.deleteMany({ where: { noteId: req.params.id } });
+    const note = await mongoDb.note.update({
       where: { id: req.params.id, userId: req.user!.id },
       data: { title, content, mode, pinned, problemId, problemTitle, tags: { create: (tags as string[]).map(t => ({ tag: t })) } },
       include: { tags: true },
@@ -44,7 +44,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    await prisma.note.delete({ where: { id: req.params.id, userId: req.user!.id } });
+    await mongoDb.note.delete({ where: { id: req.params.id, userId: req.user!.id } });
     res.json({ deleted: true });
   } catch { res.status(500).json({ message: 'Failed to delete note' }); }
 });

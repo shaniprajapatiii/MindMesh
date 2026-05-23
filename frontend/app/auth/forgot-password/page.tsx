@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold text-lg text-white">DSATracker</span>
+            <span className="font-display font-bold text-lg text-white">MindMesh</span>
           </div>
           {sent ? (
             <div className="text-center">

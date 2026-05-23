@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 import { generateToken, authenticate, AuthRequest } from '../middleware/auth';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
@@ -22,7 +22,7 @@ router.post('/send-otp', async (req: Request, res: Response) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-    await prisma.otpCode.create({ data: { email, code: otp, expiresAt } });
+    await mongoDb.otpCode.create({ data: { email, code: otp, expiresAt } });
 
     await mailer.sendMail({
       from: `DSATracker <${process.env.SMTP_USER}>`,
@@ -49,12 +49,12 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 router.post('/verify-otp', async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-    const record = await prisma.otpCode.findFirst({
+    const record = await mongoDb.otpCode.findFirst({
       where: { email, code: otp, used: false, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'desc' },
     });
     if (!record) return res.status(400).json({ message: 'Invalid or expired OTP' });
-    await prisma.otpCode.update({ where: { id: record.id }, data: { used: true } });
+    await mongoDb.otpCode.update({ where: { id: record.id }, data: { used: true } });
     res.json({ verified: true });
   } catch {
     res.status(500).json({ message: 'Verification failed' });
@@ -76,11 +76,11 @@ router.post('/register', async (req: Request, res: Response) => {
     });
     const data = schema.parse(req.body);
 
-    const exists = await prisma.user.findFirst({ where: { OR: [{ email: data.email }, { username: data.username }] } });
+    const exists = await mongoDb.user.findFirst({ where: { OR: [{ email: data.email }, { username: data.username }] } });
     if (exists) return res.status(400).json({ message: exists.email === data.email ? 'Email already registered' : 'Username taken' });
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
-    const user = await prisma.user.create({
+    const user = await mongoDb.user.create({
       data: {
         name: data.name, email: data.email, username: data.username.toLowerCase(),
         password: hashedPassword, isEmailVerified: true,
@@ -104,7 +104,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await mongoDb.user.findUnique({ where: { email } });
     if (!user || !user.password) return res.status(401).json({ message: 'Invalid credentials' });
 
     const valid = await bcrypt.compare(password, user.password);
@@ -120,7 +120,7 @@ router.post('/login', async (req: Request, res: Response) => {
 // GET /api/auth/me
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { id: true, email: true, name: true, username: true, avatar: true, role: true, streak: true, xp: true, level: true } });
+    const user = await mongoDb.user.findUnique({ where: { id: req.user!.id }, select: { id: true, email: true, name: true, username: true, avatar: true, role: true, streak: true, xp: true, level: true } });
     res.json(user);
   } catch {
     res.status(500).json({ message: 'Failed to get user' });

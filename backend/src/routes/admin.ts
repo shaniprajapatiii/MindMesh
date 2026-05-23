@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { prisma } from '../lib/db';
+import { mongoDb } from '../lib/db';
 
 const router = Router();
 
@@ -9,19 +9,19 @@ router.get('/overview', authenticate, async (req: AuthRequest, res: Response) =>
     if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
 
     const [users, submissions, notes, badges, activity] = await Promise.all([
-      prisma.user.findMany({
+      mongoDb.user.findMany({
         select: { id: true, name: true, email: true, role: true, createdAt: true, lastActiveDate: true, leetcodeId: true, codeforcesId: true, codechefId: true, gfgId: true },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
-      prisma.submission.findMany({
+      mongoDb.submission.findMany({
         include: { problem: { select: { title: true, platform: true } } },
         orderBy: { createdAt: 'desc' },
         take: 20,
       }),
-      prisma.note.count(),
-      prisma.userBadge.count(),
-      prisma.activityLog.count(),
+      mongoDb.note.count(),
+      mongoDb.userBadge.count(),
+      mongoDb.activityLog.count(),
     ]);
 
     const platformHealth = {
